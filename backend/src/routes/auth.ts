@@ -1,0 +1,227 @@
+import { Router, Request, Response } from 'express';
+import bcrypt from 'bcryptjs';
+import jwt from 'jsonwebtoken';
+import crypto from 'crypto';
+import { db } from '../db/database.js';
+import { authGuard, AuthRequest } from '../middleware/auth.js';
+import { getOrCreateBoss } from '../services/bossEngine.js';
+
+const router = Router();
+const JWT_SECRET = process.env.JWT_SECRET || 'chronoslayer_divine_secret_key_change_in_prod_777!';
+
+function createDefaultQuests(userId: string) {
+  const starterQuests = [
+    { title: 'Morning Hydration & Breathing', description: 'Drink 500ml water and complete 3 deep breaths.', attribute: 'VIT', difficulty: 'Trivial', quest_type: 'Daily' },
+    { title: 'Deep Work: Coding & Architecture', description: 'Spend 45 minutes focused on building your core project.', attribute: 'INT', difficulty: 'Hard', quest_type: 'Daily' },
+    { title: 'Physical Conditioning: 30-min Workout', description: 'Pushups, core routine, or gym session.', attribute: 'STR', difficulty: 'Medium', quest_type: 'Habit' },
+    { title: 'Tidy Workspace & Inbox Zero', description: 'Clear physical desk and organize pending tasks.', attribute: 'AGI', difficulty: 'Easy', quest_type: 'Habit' }
+  ];
+
+  const insertQuest = db.prepare(`
+    INSERT INTO quests (id, user_id, title, description, attribute, difficulty, quest_type, due_date, is_completed, created_at)
+    VALUES (?, ?, ?, ?, ?, ?, ?, ?, 0, ?)
+  `);
+
+  for (const q of starterQuests) {
+    insertQuest.run(
+      crypto.randomUUID(),
+      userId,
+      q.title,
+      q.description,
+      q.attribute,
+      q.difficulty,
+      q.quest_type,
+      null,
+      new Date().toISOString()
+    );
+  }
+}
+
+// POST /api/auth/register
+router.post('/register', async (req: Request, res: Response): Promise<void> => {
+  try {
+    const { username, email, password, timezone = 'UTC' } = req.body;
+
+    if (!username || !email || !password) {
+      res.status(400).json({ error: 'Username, email, and password are required' });
+      return;
+    }
+
+    if (username.trim().length < 3) {
+      res.status(400).json({ error: 'Username must be at least 3 characters' });
+      return;
+    }
+
+    if (password.length < 6) {
+      res.status(400).json({ error: 'Password must be at least 6 characters' });
+      return;
+    }
+
+    const existing = db.prepare('SELECT id FROM users WHERE email = ? OR username = ?').get(email.toLowerCase(), username.trim());
+    if (existing) {
+      res.status(409).json({ error: 'Username or email already registered' });
+      return;
+    }
+
+    const passwordHash = await bcrypt.hash(password, 10);
+    const userId = crypto.randomUUID();
+    const now = new Date().toISOString();
+
+    const createUserTx = db.transaction(() => {
+      // 1. Insert user
+      db.prepare(`
+        INSERT INTO users (id, username, email, password_hash, avatar_id, title, timezone, created_at)
+        VALUES (?, ?, ?, ?, 'warrior_1', 'Novice Adventurer', ?, ?)
+      `).run(userId, username.trim(), email.toLowerCase(), passwordHash, timezone, now);
+
+      // 2. Insert character
+      db.prepare(`
+        INSERT INTO characters (user_id, level, current_xp, gold, hp, max_hp, str, int, vit, agi, cha, current_streak, longest_streak, last_active_date)
+        VALUES (?, 1, 0, 50, 100, 100, 10, 10, 10, 10, 10, 0, 0, NULL)
+      `).run(userId);
+
+      // 3. Insert starter transactions record
+      db.prepare(`
+        INSERT INTO transactions (id, user_id, type, amount_gold, amount_xp, description, reference_id, created_at)
+        VALUES (?, ?, 'ADMIN_ADJUSTMENT', 50, 0, 'Welcome to ChronoSlayer! Novice Adventurer Starter Pack', NULL, ?)
+      `).run(crypto.randomUUID(), userId, now);
+
+      // 4. Create starter quests & boss
+      createDefaultQuests(userId);
+      getOrCreateBoss(userId);
+    });
+
+    createUserTx();
+
+    const token = jwt.sign({ id: userId, username: username.trim(), email: email.toLowerCase(), timezone }, JWT_SECRET, { expiresIn: '7d' });
+    const character = db.prepare('SELECT * FROM characters WHERE user_id = ?').get(userId);
+
+    res.status(201).json({
+      success: true,
+      token,
+      user: { id: userId, username: username.trim(), email: email.toLowerCase(), timezone, title: 'Novice Adventurer', avatar_id: 'warrior_1' },
+      character
+    });
+  } catch (err: any) {
+    res.status(500).json({ error: err.message || 'Registration failed' });
+  }
+});
+
+// POST /api/auth/login
+router.post('/login', async (req: Request, res: Response): Promise<void> => {
+  try {
+    const { emailOrUsername, password } = req.body;
+    if (!emailOrUsername || !password) {
+      res.status(400).json({ error: 'Email/Username and password are required' });
+      return;
+    }
+
+    const user = db.prepare(`
+      SELECT * FROM users WHERE email = ? OR username = ?
+    `).get(emailOrUsername.toLowerCase().trim(), emailOrUsername.trim()) as any;
+
+    if (!user) {
+      res.status(401).json({ error: 'Invalid credentials' });
+      return;
+    }
+
+    const valid = await bcrypt.compare(password, user.password_hash);
+    if (!valid) {
+      res.status(401).json({ error: 'Invalid credentials' });
+      return;
+    }
+
+    const token = jwt.sign({ id: user.id, username: user.username, email: user.email, timezone: user.timezone }, JWT_SECRET, { expiresIn: '7d' });
+    const character = db.prepare('SELECT * FROM characters WHERE user_id = ?').get(user.id);
+
+    res.json({
+      success: true,
+      token,
+      user: {
+        id: user.id,
+        username: user.username,
+        email: user.email,
+        timezone: user.timezone,
+        title: user.title,
+        avatar_id: user.avatar_id
+      },
+      character
+    });
+  } catch (err: any) {
+    res.status(500).json({ error: err.message || 'Login failed' });
+  }
+});
+
+// POST /api/auth/demo (Instant one-click demo login for reviewers)
+router.post('/demo', async (req: Request, res: Response): Promise<void> => {
+  try {
+    const demoEmail = 'hero.demo@chronoslayer.dev';
+    const demoUsername = 'GrandChampion';
+    let user = db.prepare('SELECT * FROM users WHERE email = ?').get(demoEmail) as any;
+
+    if (!user) {
+      const userId = 'demo-hero-id-001';
+      const passwordHash = await bcrypt.hash('DemoHeroPass123!', 10);
+      const now = new Date().toISOString();
+
+      const createDemoTx = db.transaction(() => {
+        db.prepare(`
+          INSERT INTO users (id, username, email, password_hash, avatar_id, title, timezone, created_at)
+          VALUES (?, ?, ?, ?, 'paladin_1', 'Vanquisher of Doubt', 'UTC', ?)
+        `).run(userId, demoUsername, demoEmail, passwordHash, now);
+
+        db.prepare(`
+          INSERT INTO characters (user_id, level, current_xp, gold, hp, max_hp, str, int, vit, agi, cha, current_streak, longest_streak, last_active_date)
+          VALUES (?, 3, 140, 280, 120, 120, 16, 18, 14, 15, 12, 5, 5, ?)
+        `).run(userId, now.split('T')[0]);
+
+        db.prepare(`
+          INSERT INTO transactions (id, user_id, type, amount_gold, amount_xp, description, reference_id, created_at)
+          VALUES (?, ?, 'ADMIN_ADJUSTMENT', 280, 140, 'Heroic Awakening: Demo Adventurer Initialized', NULL, ?)
+        `).run(crypto.randomUUID(), userId, now);
+
+        createDefaultQuests(userId);
+        getOrCreateBoss(userId);
+      });
+
+      createDemoTx();
+      user = db.prepare('SELECT * FROM users WHERE email = ?').get(demoEmail) as any;
+    }
+
+    const token = jwt.sign({ id: user.id, username: user.username, email: user.email, timezone: user.timezone }, JWT_SECRET, { expiresIn: '7d' });
+    const character = db.prepare('SELECT * FROM characters WHERE user_id = ?').get(user.id);
+
+    res.json({
+      success: true,
+      token,
+      user: {
+        id: user.id,
+        username: user.username,
+        email: user.email,
+        timezone: user.timezone,
+        title: user.title,
+        avatar_id: user.avatar_id
+      },
+      character
+    });
+  } catch (err: any) {
+    res.status(500).json({ error: err.message || 'Demo initialization failed' });
+  }
+});
+
+// GET /api/auth/me
+router.get('/me', authGuard, (req: AuthRequest, res: Response): void => {
+  try {
+    const user = db.prepare('SELECT id, username, email, avatar_id, title, timezone, created_at FROM users WHERE id = ?').get(req.user!.id) as any;
+    if (!user) {
+      res.status(404).json({ error: 'User not found' });
+      return;
+    }
+    const character = db.prepare('SELECT * FROM characters WHERE user_id = ?').get(req.user!.id);
+    res.json({ success: true, user, character });
+  } catch (err: any) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+export default router;
