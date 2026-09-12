@@ -238,7 +238,12 @@ export function processQuestCompletion(
       `).run(levelTxId, userId, `Leveled up to Level ${currentLevel}! Hero attributes surged!`, questId, completedAt);
     }
 
-    const updatedChar = db.prepare('SELECT * FROM characters WHERE user_id = ?').get(userId) as CharacterData;
+    const updatedChar = db.prepare('SELECT * FROM characters WHERE user_id = ?').get(userId) as any;
+    const nextLevelXp = getRequiredXpForLevel(updatedChar.level);
+    const xpProgressPercent = Math.min(100, Math.round((updatedChar.current_xp / nextLevelXp) * 100));
+    updatedChar.next_level_xp = nextLevelXp;
+    updatedChar.xp_progress_percent = xpProgressPercent;
+    updatedChar.streak_multiplier = streakMultiplier;
 
     return {
       xpEarned,

@@ -155,7 +155,14 @@ export function executeBossAttack(userId: string): AttackResult {
     }
 
     const updatedBoss = db.prepare('SELECT * FROM boss_raids WHERE id = ?').get(boss.id) as BossData;
-    const updatedChar = db.prepare('SELECT * FROM characters WHERE user_id = ?').get(userId) as CharacterData;
+    const updatedChar = db.prepare('SELECT * FROM characters WHERE user_id = ?').get(userId) as any;
+    const nextLevelXp = getRequiredXpForLevel(updatedChar.level);
+    updatedChar.next_level_xp = nextLevelXp;
+    updatedChar.xp_progress_percent = Math.min(100, Math.round((updatedChar.current_xp / nextLevelXp) * 100));
+    let sMult = 1.0;
+    if (updatedChar.current_streak >= 7) sMult = 1.30;
+    else if (updatedChar.current_streak >= 3) sMult = 1.15;
+    updatedChar.streak_multiplier = sMult;
 
     return {
       damageDealt: totalDamage,

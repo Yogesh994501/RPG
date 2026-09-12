@@ -103,7 +103,15 @@ router.post('/buy', authGuard, (req: AuthRequest, res: Response): void => {
         VALUES (?, ?, 'SHOP_PURCHASE', ?, 0, ?, ?, ?)
       `).run(txId, userId, -item.cost, `Purchased ${item.rarity} ${item.category}: "${item.name}"`, itemId, now);
 
-      const updatedChar = db.prepare('SELECT * FROM characters WHERE user_id = ?').get(userId);
+      const updatedChar = db.prepare('SELECT * FROM characters WHERE user_id = ?').get(userId) as any;
+      const nextLevelXp = getRequiredXpForLevel(updatedChar.level);
+      updatedChar.next_level_xp = nextLevelXp;
+      updatedChar.xp_progress_percent = Math.min(100, Math.round((updatedChar.current_xp / nextLevelXp) * 100));
+      let sMult = 1.0;
+      if (updatedChar.current_streak >= 7) sMult = 1.30;
+      else if (updatedChar.current_streak >= 3) sMult = 1.15;
+      updatedChar.streak_multiplier = sMult;
+
       const inventoryItem = db.prepare(`
         SELECT i.id as inventory_id, i.item_id, i.is_equipped, i.acquired_at, s.*
         FROM inventory i

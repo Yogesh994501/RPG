@@ -1,0 +1,16 @@
+{
+  "name": "chronoslayer-life-rpg",
+  "version": "1.0.0",
+  "description": "ChronoSlayer: Authoritative Life RPG turning real-world tasks into persistent fantasy progression",
+  "scripts": {
+    "dev:backend": "cd backend && npm run dev",
+    "dev:frontend": "cd frontend && npm run dev",
+    "build:backend": "cd backend && npm run build",
+    "build:frontend": "cd frontend && npm run build",
+    "build": "npm run build:backend && npm run build:frontend",
+    "start": "cd backend && npm start"
+  },
+  "keywords": ["life-rpg", "gamification", "habit-tracker", "react", "express", "sqlite"],
+  "author": "ChronoSlayer Team",
+  "license": "MIT"
+}
