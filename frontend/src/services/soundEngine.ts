@@ -260,6 +260,84 @@ class SoundEngine {
     osc.start(t);
     osc.stop(t + 0.13);
   }
+
+  // 8. Subtle Footstep Tap
+  public playFootstep() {
+    if (this.isMuted) return;
+    const ctx = this.getContext();
+    if (!ctx) return;
+
+    const t = ctx.currentTime;
+    const osc = ctx.createOscillator();
+    const gain = ctx.createGain();
+
+    osc.type = 'triangle';
+    osc.frequency.setValueAtTime(110, t);
+    osc.frequency.exponentialRampToValueAtTime(45, t + 0.04);
+
+    gain.gain.setValueAtTime(this.volume * 0.08, t);
+    gain.gain.exponentialRampToValueAtTime(0.001, t + 0.045);
+
+    osc.connect(gain);
+    gain.connect(ctx.destination);
+
+    osc.start(t);
+    osc.stop(t + 0.05);
+  }
+
+  // 9. Zone Discovery Chime (Major triad arpeggio)
+  public playZoneEnter() {
+    if (this.isMuted) return;
+    const ctx = this.getContext();
+    if (!ctx) return;
+
+    const notes = [440, 554.37, 659.25]; // A4, C#5, E5
+    const t = ctx.currentTime;
+
+    notes.forEach((freq, idx) => {
+      const osc = ctx.createOscillator();
+      const gain = ctx.createGain();
+      osc.type = 'sine';
+      osc.frequency.setValueAtTime(freq, t + idx * 0.06);
+
+      gain.gain.setValueAtTime(0, t + idx * 0.06);
+      gain.gain.linearRampToValueAtTime(this.volume * 0.18, t + idx * 0.06 + 0.02);
+      gain.gain.exponentialRampToValueAtTime(0.001, t + idx * 0.06 + 0.25);
+
+      osc.connect(gain);
+      gain.connect(ctx.destination);
+
+      osc.start(t + idx * 0.06);
+      osc.stop(t + idx * 0.06 + 0.28);
+    });
+  }
+
+  // 10. Chest Discovery Fanfare
+  public playChestOpen() {
+    if (this.isMuted) return;
+    const ctx = this.getContext();
+    if (!ctx) return;
+
+    const notes = [392.00, 523.25, 659.25, 783.99, 1046.50]; // G4, C5, E5, G5, C6
+    const t = ctx.currentTime;
+
+    notes.forEach((freq, idx) => {
+      const osc = ctx.createOscillator();
+      const gain = ctx.createGain();
+      osc.type = 'triangle';
+      osc.frequency.setValueAtTime(freq, t + idx * 0.07);
+
+      gain.gain.setValueAtTime(this.volume * 0.2, t + idx * 0.07);
+      gain.gain.exponentialRampToValueAtTime(0.001, t + idx * 0.07 + 0.35);
+
+      osc.connect(gain);
+      gain.connect(ctx.destination);
+
+      osc.start(t + idx * 0.07);
+      osc.stop(t + idx * 0.07 + 0.38);
+    });
+  }
 }
 
 export const soundEngine = new SoundEngine();
+

@@ -4,11 +4,14 @@ import { CharacterPanel } from './components/CharacterPanel';
 import { QuestBoard } from './components/QuestBoard';
 import { QuestModal } from './components/QuestModal';
 import { BossRaid } from './components/BossRaid';
+import { BattleArena } from './components/BattleArena';
+import { WorldMap } from './components/WorldMap';
 import { ArmoryShop } from './components/ArmoryShop';
 import { ChronicleView } from './components/ChronicleView';
 import { CustomRewardsView } from './components/CustomRewardsView';
 import { AuthModal } from './components/AuthModal';
 import { LevelUpCelebration } from './components/LevelUpCelebration';
+import { LootChestModal, LootReward } from './components/LootChestModal';
 import { 
   User, 
   Character, 
@@ -24,6 +27,7 @@ import {
 } from './types';
 import { api } from './services/api';
 import { soundEngine } from './services/soundEngine';
+import { triggerCriticalHitParticles } from './services/particleEngine';
 import { 
   Scroll, 
   Skull, 
@@ -31,8 +35,8 @@ import {
   BookOpen, 
   Gift, 
   Sparkles, 
-  Coins, 
-  Flame 
+  Swords,
+  Compass
 } from 'lucide-react';
 
 export function App() {
@@ -55,24 +59,29 @@ export function App() {
   const [customRewards, setCustomRewards] = useState<CustomReward[]>([]);
 
   // Navigation & Modals
-  const [activeTab, setActiveTab] = useState<'quests' | 'boss' | 'armory' | 'chronicle' | 'rewards'>('quests');
+  const [activeTab, setActiveTab] = useState<'quests' | 'map' | 'boss' | 'armory' | 'chronicle' | 'rewards'>('quests');
+  const [showMapInArena, setShowMapInArena] = useState(true);
   const [isQuestModalOpen, setIsQuestModalOpen] = useState(false);
   const [editingQuest, setEditingQuest] = useState<Quest | null>(null);
   const [isAuthModalOpen, setIsAuthModalOpen] = useState(false);
   const [levelUpEvent, setLevelUpEvent] = useState<LevelUpEvent | null>(null);
+  const [lootChest, setLootChest] = useState<LootReward | null>(null);
   const [isMuted, setIsMuted] = useState(soundEngine.getMuted());
-  const [isLoading, setIsLoading] = useState(true);
   const [toastMessage, setToastMessage] = useState<string | null>(null);
+
+  // Battle Arena Animations
+  const [isLunging, setIsLunging] = useState(false);
+  const [isRecoiling, setIsRecoiling] = useState(false);
+  const [combatNumber, setCombatNumber] = useState<{ amount: number; isCrit: boolean } | null>(null);
 
   const showToast = (msg: string) => {
     setToastMessage(msg);
     setTimeout(() => setToastMessage(null), 3500);
   };
 
-  // Load all user data cold from SQLite backend
+  // Load user data cold from SQLite backend
   const loadUserData = useCallback(async () => {
     try {
-      setIsLoading(true);
       const [charRes, questsRes, shopRes, bossRes, chronicleRes, rewardsRes] = await Promise.all([
         api.getCharacter(),
         api.getQuests(),
@@ -116,8 +125,6 @@ export function App() {
       if (!api.getToken()) {
         setIsAuthModalOpen(true);
       }
-    } finally {
-      setIsLoading(false);
     }
   }, []);
 
@@ -128,7 +135,6 @@ export function App() {
   // Keyboard Shortcuts (N/Q: New Quest, B: Boss, S: Shop, C: Chronicle, M: Mute, ESC: close)
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
-      // Ignore if active element is an input or textarea
       if (['INPUT', 'TEXTAREA', 'SELECT'].includes((e.target as HTMLElement)?.tagName)) {
         return;
       }
@@ -185,9 +191,32 @@ export function App() {
     showToast('Quest abandoned.');
   };
 
+  const triggerCombatClash = (damage: number, isCrit: boolean) => {
+    setIsLunging(true);
+    setIsRecoiling(true);
+    setCombatNumber({ amount: damage, isCrit });
+
+    if (isCrit) {
+      soundEngine.playCriticalHit();
+      triggerCriticalHitParticles();
+    } else {
+      soundEngine.playSwordSlash();
+    }
+
+    setTimeout(() => {
+      setIsLunging(false);
+      setIsRecoiling(false);
+    }, 500);
+
+    setTimeout(() => {
+      setCombatNumber(null);
+    }, 1300);
+  };
+
   const handleCompleteQuest = async (questId: string) => {
+    const targetQuest = quests.find(q => q.id === questId);
     try {
-      // 1. Optimistically mark quest as completed
+      // 1. Optimistic update
       setQuests((prev) =>
         prev.map((q) => (q.id === questId ? { ...q, is_completed: 1, completed_at: new Date().toISOString() } : q))
       );
@@ -195,13 +224,34 @@ export function App() {
       // 2. Authoritative server calculation
       const res = await api.completeQuest(questId);
 
-      // 3. Update character stats
+      // 3. Trigger Battle Arena Clash
+      if (res.bossCombat) {
+        triggerCombatClash(res.bossCombat.damageDealt, res.bossCombat.isCritical);
+        if (res.bossCombat.boss) {
+          setBoss(res.bossCombat.boss);
+        }
+      }
+
+      // 4. Update character stats
       if (res.reward) {
         setCharacter(res.reward.character);
 
         showToast(
           `⚔️ Deed Fulfilled! +${res.reward.xpEarned} XP, +${res.reward.goldEarned} Gold, ${res.reward.attributeGained} +${res.reward.attributeBonus}!`
         );
+
+        // Check for Mystery Loot Chest (triggered on Hard/Legendary deeds)
+        if (targetQuest && (targetQuest.difficulty === 'Hard' || targetQuest.difficulty === 'Legendary')) {
+          setTimeout(() => {
+            setLootChest({
+              title: `${targetQuest.difficulty} Deed Bounty Unsealed!`,
+              gold: res.reward.goldEarned,
+              xp: res.reward.xpEarned,
+              attribute: res.reward.attributeGained,
+              attributeBonus: res.reward.attributeBonus
+            });
+          }, 600);
+        }
 
         if (res.reward.leveledUp) {
           setLevelUpEvent({
@@ -213,12 +263,7 @@ export function App() {
         }
       }
 
-      // 4. Update Boss stats if affected
-      if (res.bossCombat && res.bossCombat.boss) {
-        setBoss(res.bossCombat.boss);
-      }
-
-      // 5. Refresh chronicle in background
+      // Refresh chronicle
       api.getChronicle().then((cRes) => {
         if (cRes.chronicle) {
           setTransactions(cRes.chronicle);
@@ -237,6 +282,18 @@ export function App() {
     const res = await api.attackBoss();
     setBoss(res.boss);
     setCharacter(res.character);
+    triggerCombatClash(res.damageDealt, res.isCritical);
+
+    if (res.bossDefeated) {
+      soundEngine.playBossVictory();
+      setLootChest({
+        title: `🏆 TITAN VANQUISHED: ${res.boss.boss_name}!`,
+        gold: res.boss.reward_gold,
+        xp: res.boss.reward_xp,
+        specialItem: 'Titan Core Shard'
+      });
+    }
+
     return res;
   };
 
@@ -247,7 +304,6 @@ export function App() {
     setUserInventory((prev) => [res.inventoryItem, ...prev]);
     showToast(`Acquired ${res.item.name}!`);
 
-    // Reload chronicle
     api.getChronicle().then((cRes) => {
       if (cRes.chronicle) {
         setTransactions(cRes.chronicle);
@@ -265,6 +321,15 @@ export function App() {
 
     const shopRes = await api.getShop();
     setUserInventory(shopRes.user_inventory || []);
+  };
+
+  // Avatar Update Handler
+  const handleUpdateAvatar = async (avatarId: string) => {
+    const res = await api.updateProfile({ avatar_id: avatarId });
+    if (res.user) {
+      setUser(res.user);
+      showToast('Hero archetype & portrait updated!');
+    }
   };
 
   // Custom Rewards Handlers
@@ -320,6 +385,13 @@ export function App() {
       {/* Mobile Tab Bar */}
       <div className="flex sm:hidden items-center justify-around bg-slate-950 border-b border-slate-800 py-2 px-1 text-xs">
         <button
+          onClick={() => setActiveTab('map')}
+          className={`flex flex-col items-center gap-1 ${activeTab === 'map' ? 'text-amber-400 font-bold' : 'text-slate-400'}`}
+        >
+          <Compass size={16} />
+          <span>Realm</span>
+        </button>
+        <button
           onClick={() => setActiveTab('quests')}
           className={`flex flex-col items-center gap-1 ${activeTab === 'quests' ? 'text-amber-400 font-bold' : 'text-slate-400'}`}
         >
@@ -358,13 +430,15 @@ export function App() {
 
       {/* Main App Layout */}
       <main className="main-layout flex-1">
-        {/* Left Column: Character Sheet */}
+        {/* Left Column: Character Sheet with Paper-Doll Rig */}
         {user && character ? (
           <CharacterPanel
             user={user}
             character={character}
             equippedItems={equippedItems}
             onUnequip={handleEquipItem}
+            onUpdateAvatar={handleUpdateAvatar}
+            onOpenArmorySlot={(cat) => setActiveTab('armory')}
           />
         ) : (
           <aside className="rpg-panel text-center py-12">
@@ -379,7 +453,7 @@ export function App() {
           </aside>
         )}
 
-        {/* Center Column: Primary Active View */}
+        {/* Center Column: Active View */}
         <div className="space-y-4">
           {/* Desktop Navigation Tabs */}
           <div className="hidden sm:flex items-center gap-2 border-b border-slate-800/80 pb-2">
@@ -388,14 +462,21 @@ export function App() {
               className={`rpg-btn text-xs ${activeTab === 'quests' ? 'rpg-btn-gold' : 'rpg-btn-secondary'}`}
             >
               <Scroll size={15} />
-              <span>Quests & Deeds</span>
+              <span>Quests & Arena</span>
+            </button>
+            <button
+              onClick={() => setActiveTab('map')}
+              className={`rpg-btn text-xs ${activeTab === 'map' ? 'rpg-btn-gold' : 'rpg-btn-secondary'}`}
+            >
+              <Compass size={15} />
+              <span>🗺️ Realm Map (WASD)</span>
             </button>
             <button
               onClick={() => setActiveTab('boss')}
               className={`rpg-btn text-xs ${activeTab === 'boss' ? 'rpg-btn-gold' : 'rpg-btn-secondary'}`}
             >
               <Skull size={15} />
-              <span>World Boss Raid</span>
+              <span>Boss Raid</span>
             </button>
             <button
               onClick={() => setActiveTab('armory')}
@@ -420,21 +501,97 @@ export function App() {
             </button>
           </div>
 
+          {/* Standalone Realm Map View */}
+          {activeTab === 'map' && user && character && (
+            <WorldMap
+              user={user}
+              character={character}
+              onNavigateTab={(tab) => setActiveTab(tab)}
+              onAwardBonus={(gold, xp, msg) => {
+                showToast(msg);
+                api.getCharacter().then((res) => {
+                  if (res.character) setCharacter(res.character);
+                });
+              }}
+            />
+          )}
+
           {/* View Content based on Tab */}
           {activeTab === 'quests' && (
-            <QuestBoard
-              quests={quests}
-              onCompleteQuest={handleCompleteQuest}
-              onOpenNewQuest={() => {
-                setEditingQuest(null);
-                setIsQuestModalOpen(true);
-              }}
-              onEditQuest={(q) => {
-                setEditingQuest(q);
-                setIsQuestModalOpen(true);
-              }}
-              onDeleteQuest={handleDeleteQuest}
-            />
+            <>
+              {/* Quick View Mode Switcher */}
+              <div className="flex items-center justify-between bg-slate-950/70 p-2.5 rounded-xl border border-slate-800 text-xs mb-3">
+                <span className="text-slate-400 font-mono text-[11px] flex items-center gap-1.5">
+                  <Compass size={14} className="text-amber-400" />
+                  <span>Realm View Mode:</span>
+                </span>
+                <div className="flex gap-1.5">
+                  <button
+                    onClick={() => setShowMapInArena(true)}
+                    className={`px-3 py-1 rounded-lg text-xs font-bold transition flex items-center gap-1.5 ${
+                      showMapInArena ? 'bg-amber-500/25 text-amber-300 border border-amber-500/60 shadow-sm' : 'text-slate-400 hover:text-white bg-slate-900 border border-slate-800'
+                    }`}
+                  >
+                    <span>🗺️ 2D Walkable Realm</span>
+                    <span className="text-[10px] bg-black/40 px-1 py-0.2 rounded font-mono text-amber-400 font-bold">WASD</span>
+                  </button>
+                  <button
+                    onClick={() => setShowMapInArena(false)}
+                    className={`px-3 py-1 rounded-lg text-xs font-bold transition flex items-center gap-1.5 ${
+                      !showMapInArena ? 'bg-amber-500/25 text-amber-300 border border-amber-500/60 shadow-sm' : 'text-slate-400 hover:text-white bg-slate-900 border border-slate-800'
+                    }`}
+                  >
+                    <span>⚔️ 1v1 Battle Arena</span>
+                  </button>
+                </div>
+              </div>
+
+              {/* Show either World Map or Battle Arena based on toggle */}
+              {user && character && (
+                showMapInArena ? (
+                  <WorldMap
+                    user={user}
+                    character={character}
+                    onNavigateTab={(tab) => setActiveTab(tab)}
+                    onAwardBonus={(gold, xp, msg) => {
+                      showToast(msg);
+                      api.getCharacter().then((res) => {
+                        if (res.character) setCharacter(res.character);
+                      });
+                    }}
+                  />
+                ) : (
+                  boss && (
+                    <BattleArena
+                      user={user}
+                      character={character}
+                      boss={boss}
+                      combatAttributes={combatAttributes}
+                      equippedItems={equippedItems}
+                      onAttackBoss={handleAttackBoss}
+                      isLunging={isLunging}
+                      isRecoiling={isRecoiling}
+                      combatNumber={combatNumber}
+                    />
+                  )
+                )
+              )}
+
+              {/* The Quest Board */}
+              <QuestBoard
+                quests={quests}
+                onCompleteQuest={handleCompleteQuest}
+                onOpenNewQuest={() => {
+                  setEditingQuest(null);
+                  setIsQuestModalOpen(true);
+                }}
+                onEditQuest={(q) => {
+                  setEditingQuest(q);
+                  setIsQuestModalOpen(true);
+                }}
+                onDeleteQuest={handleDeleteQuest}
+              />
+            </>
           )}
 
           {activeTab === 'boss' && (
@@ -534,6 +691,11 @@ export function App() {
       <LevelUpCelebration
         event={levelUpEvent}
         onClose={() => setLevelUpEvent(null)}
+      />
+
+      <LootChestModal
+        loot={lootChest}
+        onClose={() => setLootChest(null)}
       />
     </div>
   );
