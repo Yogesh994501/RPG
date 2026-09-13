@@ -92,8 +92,23 @@ export const BossRaid: React.FC<BossRaidProps> = ({
           </div>
         )}
 
-        <div className="inline-flex p-4 rounded-2xl bg-red-950/40 border border-red-900/50 shadow-inner mb-2">
-          <Skull size={48} className="text-red-400" />
+        <div 
+          className={`boss-widget-portrait transition-all duration-200 ${
+            isAttacking 
+              ? 'scale-95 border-red-500 shadow-[0_0_30px_#EF4444] brightness-125' 
+              : 'border-red-800/80 shadow-[0_0_20px_rgba(239,68,68,0.3)] hover:border-red-600'
+          }`}
+          style={{ width: 130, height: 130, minWidth: 130, minHeight: 130, maxWidth: 130, maxHeight: 130 }}
+        >
+          <img
+            src="/assets/boss_malakor.jpg"
+            alt={boss.boss_name}
+            style={{ width: 130, height: 130, objectFit: 'cover', objectPosition: 'top', display: 'block' }}
+          />
+          <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-transparent pointer-events-none" />
+          <span className="absolute bottom-1.5 left-1/2 -translate-x-1/2 text-[10px] font-rpg tracking-widest text-red-300 font-bold uppercase bg-black/60 px-2 py-0.5 rounded border border-red-900/60">
+            {boss.boss_name}
+          </span>
         </div>
         <h3 className="font-rpg text-lg font-bold text-white tracking-wide">
           {boss.boss_name}
