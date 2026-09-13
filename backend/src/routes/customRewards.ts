@@ -3,6 +3,7 @@ import crypto from 'crypto';
 import { db } from '../db/database.js';
 import { authGuard, AuthRequest } from '../middleware/auth.js';
 import { CharacterData } from '../services/rpgEngine.js';
+import { validateBody, CreateRewardSchema } from '../validators/schemas.js';
 
 const router = Router();
 
@@ -18,7 +19,7 @@ router.get('/', authGuard, (req: AuthRequest, res: Response): void => {
 });
 
 // POST /api/custom-rewards
-router.post('/', authGuard, (req: AuthRequest, res: Response): void => {
+router.post('/', authGuard, validateBody(CreateRewardSchema), (req: AuthRequest, res: Response): void => {
   try {
     const userId = req.user!.id;
     const { title, cost, icon = 'gift' } = req.body;

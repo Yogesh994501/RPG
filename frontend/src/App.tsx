@@ -40,98 +40,58 @@ import {
   Compass
 } from 'lucide-react';
 
-export function App() {
-  const [user, setUser] = useState<User | null>(null);
-  const [character, setCharacter] = useState<Character | null>(null);
-  const [equippedItems, setEquippedItems] = useState<InventoryItem[]>([]);
-  const [quests, setQuests] = useState<Quest[]>([]);
-  const [shopItems, setShopItems] = useState<ShopItem[]>([]);
-  const [userInventory, setUserInventory] = useState<InventoryItem[]>([]);
-  const [boss, setBoss] = useState<Boss | null>(null);
-  const [combatAttributes, setCombatAttributes] = useState<CombatAttributes | null>(null);
-  const [transactions, setTransactions] = useState<Transaction[]>([]);
-  const [questLogs, setQuestLogs] = useState<QuestLog[]>([]);
-  const [chronicleStats, setChronicleStats] = useState({
-    totalCompletedQuests: 0,
-    lifetimeGold: 0,
-    lifetimeXp: 0,
-    bossesDefeated: 0
-  });
-  const [customRewards, setCustomRewards] = useState<CustomReward[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
+import { useRpgStore } from './store/useRpgStore';
 
-  // Navigation & Modals
-  const [activeTab, setActiveTab] = useState<'quests' | 'map' | 'boss' | 'armory' | 'chronicle' | 'rewards'>('quests');
-  const [showMapInArena, setShowMapInArena] = useState(true);
+export function App() {
+  const {
+    user,
+    character,
+    equippedItems,
+    quests,
+    shopItems,
+    userInventory,
+    boss,
+    combatAttributes,
+    transactions,
+    questLogs,
+    chronicleStats,
+    customRewards,
+    isLoading,
+    activeTab,
+    showMapInArena,
+    isMuted,
+    toastMessage,
+    loadUserData,
+    setUser,
+    setCharacter,
+    setActiveTab,
+    setShowMapInArena,
+    toggleMute,
+    logout,
+    saveQuest,
+    deleteQuest,
+    completeQuest,
+    attackBoss,
+    buyItem,
+    equipItem,
+    updateAvatar,
+    createCustomReward,
+    claimCustomReward,
+    deleteCustomReward,
+    showToast
+  } = useRpgStore();
+
+  // Local UI & Animation Modals
   const [isQuestModalOpen, setIsQuestModalOpen] = useState(false);
   const [editingQuest, setEditingQuest] = useState<Quest | null>(null);
   const [isAuthModalOpen, setIsAuthModalOpen] = useState(false);
   const [levelUpEvent, setLevelUpEvent] = useState<LevelUpEvent | null>(null);
   const [lootChest, setLootChest] = useState<LootReward | null>(null);
-  const [isMuted, setIsMuted] = useState(soundEngine.getMuted());
-  const [toastMessage, setToastMessage] = useState<string | null>(null);
 
   // Battle Arena Animations
   const [isLunging, setIsLunging] = useState(false);
   const [isRecoiling, setIsRecoiling] = useState(false);
   const [combatNumber, setCombatNumber] = useState<{ amount: number; isCrit: boolean } | null>(null);
-
-  const showToast = (msg: string) => {
-    setToastMessage(msg);
-    setTimeout(() => setToastMessage(null), 3500);
-  };
-
-  // Load user data cold from SQLite backend
-  const loadUserData = useCallback(async () => {
-    setIsLoading(true);
-    try {
-      const [charRes, questsRes, shopRes, bossRes, chronicleRes, rewardsRes] = await Promise.all([
-        api.getCharacter(),
-        api.getQuests(),
-        api.getShop(),
-        api.getBoss(),
-        api.getChronicle(),
-        api.getCustomRewards()
-      ]);
-
-      if (charRes.character) {
-        setUser(charRes.user);
-        setCharacter(charRes.character);
-        setEquippedItems(charRes.equipped_items || []);
-      }
-
-      if (questsRes.quests) {
-        setQuests(questsRes.quests);
-      }
-
-      if (shopRes.shop_items) {
-        setShopItems(shopRes.shop_items);
-        setUserInventory(shopRes.user_inventory || []);
-      }
-
-      if (bossRes.boss) {
-        setBoss(bossRes.boss);
-        setCombatAttributes(bossRes.combatAttributes);
-      }
-
-      if (chronicleRes.chronicle) {
-        setTransactions(chronicleRes.chronicle);
-        setQuestLogs(chronicleRes.questLogs || []);
-        setChronicleStats(chronicleRes.stats);
-      }
-
-      if (rewardsRes.rewards) {
-        setCustomRewards(rewardsRes.rewards);
-      }
-    } catch (err: any) {
-      console.warn('Authentication or connection issue:', err.message);
-      if (!api.getToken()) {
-        setIsAuthModalOpen(true);
-      }
-    } finally {
-      setIsLoading(false);
-    }
-  }, []);
 
   useEffect(() => {
     loadUserData();
@@ -145,8 +105,7 @@ export function App() {
       }
 
       if (e.key === 'm' || e.key === 'M') {
-        const nextMuted = soundEngine.toggleMute();
-        setIsMuted(nextMuted);
+        toggleMute();
       } else if (e.key === 'n' || e.key === 'N' || e.key === 'q' || e.key === 'Q') {
         e.preventDefault();
         setEditingQuest(null);
@@ -162,39 +121,7 @@ export function App() {
 
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
-  }, []);
-
-  const handleToggleSound = () => {
-    const nextMuted = soundEngine.toggleMute();
-    setIsMuted(nextMuted);
-  };
-
-  const handleLogout = () => {
-    api.logout();
-    setUser(null);
-    setCharacter(null);
-    setQuests([]);
-    setIsAuthModalOpen(true);
-  };
-
-  // Quests CRUD Handlers
-  const handleSaveQuest = async (questData: any) => {
-    if (editingQuest) {
-      const res = await api.updateQuest(editingQuest.id, questData);
-      setQuests((prev) => prev.map((q) => (q.id === editingQuest.id ? res.quest : q)));
-      showToast(`Quest "${res.quest.title}" revised!`);
-    } else {
-      const res = await api.createQuest(questData);
-      setQuests((prev) => [res.quest, ...prev]);
-      showToast(`Summoned new quest: "${res.quest.title}"!`);
-    }
-  };
-
-  const handleDeleteQuest = async (questId: string) => {
-    await api.deleteQuest(questId);
-    setQuests((prev) => prev.filter((q) => q.id !== questId));
-    showToast('Quest abandoned.');
-  };
+  }, [toggleMute, setActiveTab]);
 
   const triggerCombatClash = (damage: number, isCrit: boolean) => {
     setIsLunging(true);
@@ -220,33 +147,13 @@ export function App() {
 
   const handleCompleteQuest = async (questId: string) => {
     const targetQuest = quests.find(q => q.id === questId);
-    if (!targetQuest) return;
-
-    // Snapshot state for optimistic rollback if anti-cheat rejects
-    const previousQuests = [...quests];
-    const previousCharacter = character ? { ...character } : null;
-
     try {
-      // 1. Optimistic update
-      setQuests((prev) =>
-        prev.map((q) => (q.id === questId ? { ...q, is_completed: 1, completed_at: new Date().toISOString() } : q))
-      );
-
-      // 2. Authoritative server calculation
-      const res = await api.completeQuest(questId);
-
-      // 3. Trigger Battle Arena Clash
-      if (res.bossCombat) {
+      const res = await completeQuest(questId);
+      if (res?.bossCombat) {
         triggerCombatClash(res.bossCombat.damageDealt, res.bossCombat.isCritical);
-        if (res.bossCombat.boss) {
-          setBoss(res.bossCombat.boss);
-        }
       }
 
-      // 4. Update character stats
-      if (res.reward) {
-        setCharacter(res.reward.character);
-
+      if (res?.reward) {
         showToast(
           `⚔️ Deed Fulfilled! +${res.reward.xpEarned} XP, +${res.reward.goldEarned} Gold, ${res.reward.attributeGained} +${res.reward.attributeBonus}!`
         );
@@ -273,40 +180,13 @@ export function App() {
           });
         }
       }
-
-      // Refresh chronicle
-      api.getChronicle().then((cRes) => {
-        if (cRes.chronicle) {
-          setTransactions(cRes.chronicle);
-          setQuestLogs(cRes.questLogs || []);
-          setChronicleStats(cRes.stats);
-        }
-      });
-    } catch (err: any) {
-      // Rollback optimistic state immediately
-      setQuests(previousQuests);
-      if (previousCharacter) {
-        setCharacter(previousCharacter);
-      }
-
-      // Reject shake animation on the card
-      const cardEl = document.getElementById(`quest-card-${questId}`);
-      if (cardEl) {
-        cardEl.classList.remove('shake-reject');
-        void cardEl.offsetWidth; // reflow
-        cardEl.classList.add('shake-reject');
-      }
-
-      soundEngine.playQuestAbandon();
-      showToast(`⚠️ Deed Rejected: ${err.message || 'Already completed for this cycle!'}`);
+    } catch {
+      // Rollback and reject animation is handled inside useRpgStore
     }
   };
 
-  // Boss Attack Handler
   const handleAttackBoss = async () => {
-    const res = await api.attackBoss();
-    setBoss(res.boss);
-    setCharacter(res.character);
+    const res = await attackBoss();
     triggerCombatClash(res.damageDealt, res.isCritical);
 
     if (res.bossDefeated) {
@@ -322,65 +202,14 @@ export function App() {
     return res;
   };
 
-  // Shop Buy Handler
-  const handleBuyItem = async (itemId: string) => {
-    const res = await api.buyItem(itemId);
-    setCharacter(res.character);
-    setUserInventory((prev) => [res.inventoryItem, ...prev]);
-    showToast(`Acquired ${res.item.name}!`);
-
-    api.getChronicle().then((cRes) => {
-      if (cRes.chronicle) {
-        setTransactions(cRes.chronicle);
-        setChronicleStats(cRes.stats);
-      }
-    });
+  const handleLogout = () => {
+    logout();
+    setIsAuthModalOpen(true);
   };
 
-  // Equip Item Handler
-  const handleEquipItem = async (inventoryId: string) => {
-    await api.equipItem(inventoryId);
-    const charRes = await api.getCharacter();
-    setCharacter(charRes.character);
-    setEquippedItems(charRes.equipped_items || []);
-
-    const shopRes = await api.getShop();
-    setUserInventory(shopRes.user_inventory || []);
-  };
-
-  // Avatar Update Handler
-  const handleUpdateAvatar = async (avatarId: string) => {
-    const res = await api.updateProfile({ avatar_id: avatarId });
-    if (res.user) {
-      setUser(res.user);
-      showToast('Hero archetype & portrait updated!');
-    }
-  };
-
-  // Custom Rewards Handlers
-  const handleCreateCustomReward = async (data: { title: string; cost: number }) => {
-    const res = await api.createCustomReward(data);
-    setCustomRewards((prev) => [...prev, res.reward]);
-    showToast(`Registered bounty: "${res.reward.title}"!`);
-  };
-
-  const handleClaimCustomReward = async (rewardId: string) => {
-    const res = await api.claimCustomReward(rewardId);
-    setCharacter(res.character);
-    showToast(`Claimed real-world reward: "${res.reward.title}"!`);
-
-    api.getChronicle().then((cRes) => {
-      if (cRes.chronicle) {
-        setTransactions(cRes.chronicle);
-        setChronicleStats(cRes.stats);
-      }
-    });
-  };
-
-  const handleDeleteCustomReward = async (rewardId: string) => {
-    await api.deleteCustomReward(rewardId);
-    setCustomRewards((prev) => prev.filter((r) => r.id !== rewardId));
-    showToast('Reward discarded.');
+  const handleSaveQuest = async (questData: any) => {
+    await saveQuest(questData, editingQuest?.id);
+    setIsQuestModalOpen(false);
   };
 
   return (
@@ -404,7 +233,7 @@ export function App() {
         onOpenAuth={() => setIsAuthModalOpen(true)}
         onLogout={handleLogout}
         isMuted={isMuted}
-        onToggleSound={handleToggleSound}
+        onToggleSound={toggleMute}
       />
 
       {/* Mobile Tab Bar */}
@@ -468,8 +297,8 @@ export function App() {
             user={user}
             character={character}
             equippedItems={equippedItems}
-            onUnequip={handleEquipItem}
-            onUpdateAvatar={handleUpdateAvatar}
+            onUnequip={equipItem}
+            onUpdateAvatar={updateAvatar}
             onOpenArmorySlot={(cat) => setActiveTab('armory')}
           />
         ) : (
@@ -624,7 +453,7 @@ export function App() {
                   setEditingQuest(q);
                   setIsQuestModalOpen(true);
                 }}
-                onDeleteQuest={handleDeleteQuest}
+                onDeleteQuest={deleteQuest}
               />
             </>
           )
@@ -643,8 +472,8 @@ export function App() {
               shopItems={shopItems}
               userInventory={userInventory}
               userGold={character?.gold || 0}
-              onBuyItem={handleBuyItem}
-              onEquipItem={handleEquipItem}
+              onBuyItem={buyItem}
+              onEquipItem={equipItem}
             />
           )}
 
@@ -660,9 +489,9 @@ export function App() {
             <CustomRewardsView
               rewards={customRewards}
               userGold={character?.gold || 0}
-              onCreateReward={handleCreateCustomReward}
-              onClaimReward={handleClaimCustomReward}
-              onDeleteReward={handleDeleteCustomReward}
+              onCreateReward={createCustomReward}
+              onClaimReward={claimCustomReward}
+              onDeleteReward={deleteCustomReward}
             />
           )}
         </div>

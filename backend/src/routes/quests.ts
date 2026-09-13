@@ -4,6 +4,7 @@ import { db } from '../db/database.js';
 import { authGuard, AuthRequest } from '../middleware/auth.js';
 import { processQuestCompletion } from '../services/rpgEngine.js';
 import { executeBossAttack, getOrCreateBoss } from '../services/bossEngine.js';
+import { validateBody, CreateQuestSchema, UpdateQuestSchema } from '../validators/schemas.js';
 
 const router = Router();
 
@@ -83,7 +84,7 @@ router.get('/', authGuard, (req: AuthRequest, res: Response): void => {
 });
 
 // POST /api/quests
-router.post('/', authGuard, (req: AuthRequest, res: Response): void => {
+router.post('/', authGuard, validateBody(CreateQuestSchema), (req: AuthRequest, res: Response): void => {
   try {
     const userId = req.user!.id;
     if (isRateLimited(userId)) {
@@ -129,7 +130,7 @@ router.post('/', authGuard, (req: AuthRequest, res: Response): void => {
 });
 
 // PUT /api/quests/:id
-router.put('/:id', authGuard, (req: AuthRequest, res: Response): void => {
+router.put('/:id', authGuard, validateBody(UpdateQuestSchema), (req: AuthRequest, res: Response): void => {
   try {
     const userId = req.user!.id;
     const questId = req.params.id;

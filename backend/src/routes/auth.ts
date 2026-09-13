@@ -5,6 +5,7 @@ import crypto from 'crypto';
 import { db } from '../db/database.js';
 import { authGuard, AuthRequest } from '../middleware/auth.js';
 import { getOrCreateBoss } from '../services/bossEngine.js';
+import { validateBody, RegisterSchema, LoginSchema } from '../validators/schemas.js';
 
 const router = Router();
 const JWT_SECRET = process.env.JWT_SECRET || 'chronoslayer_divine_secret_key_change_in_prod_777!';
@@ -39,7 +40,7 @@ function createDefaultQuests(userId: string) {
 }
 
 // POST /api/auth/register
-router.post('/register', async (req: Request, res: Response): Promise<void> => {
+router.post('/register', validateBody(RegisterSchema), async (req: Request, res: Response): Promise<void> => {
   try {
     const { username, email, password, timezone = 'UTC' } = req.body;
 
@@ -109,7 +110,7 @@ router.post('/register', async (req: Request, res: Response): Promise<void> => {
 });
 
 // POST /api/auth/login
-router.post('/login', async (req: Request, res: Response): Promise<void> => {
+router.post('/login', validateBody(LoginSchema), async (req: Request, res: Response): Promise<void> => {
   try {
     const { emailOrUsername, password } = req.body;
     if (!emailOrUsername || !password) {

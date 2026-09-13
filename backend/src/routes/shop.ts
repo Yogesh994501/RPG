@@ -3,6 +3,7 @@ import crypto from 'crypto';
 import { db } from '../db/database.js';
 import { authGuard, AuthRequest } from '../middleware/auth.js';
 import { CharacterData, getRequiredXpForLevel } from '../services/rpgEngine.js';
+import { validateBody, BuyItemSchema } from '../validators/schemas.js';
 
 const router = Router();
 
@@ -26,7 +27,7 @@ router.get('/', authGuard, (req: AuthRequest, res: Response): void => {
 });
 
 // POST /api/shop/buy
-router.post('/buy', authGuard, (req: AuthRequest, res: Response): void => {
+router.post('/buy', authGuard, validateBody(BuyItemSchema), (req: AuthRequest, res: Response): void => {
   try {
     const userId = req.user!.id;
     const { itemId } = req.body;

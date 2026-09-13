@@ -1,0 +1,196 @@
+// Production PostgreSQL Prisma Schema for LifeRPG / ChronoSlayer
+// High-concurrency relational data engine
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum SkillTree {
+  mind
+  body
+  craft
+  discipline
+}
+
+enum Difficulty {
+  trivial
+  easy
+  medium
+  hard
+  legendary
+}
+
+enum Recurrence {
+  none
+  daily
+  weekly
+}
+
+model User {
+  id             String          @id @default(uuid())
+  email          String          @unique
+  passwordHash   String          @map("password_hash")
+  displayName    String          @map("display_name")
+  avatarId       String          @default("warrior_1") @map("avatar_id")
+  title          String          @default("Novice Adventurer")
+  timezone       String          @default("UTC")
+  level          Int             @default(1)
+  currentXP      Int             @default(0) @map("current_xp")
+  xpToNextLevel  Int             @default(120) @map("xp_to_next_level")
+  gold           Int             @default(50)
+  hp             Int             @default(100)
+  maxHp          Int             @default(100) @map("max_hp")
+  str            Int             @default(10)
+  int            Int             @default(10)
+  vit            Int             @default(10)
+  agi            Int             @default(10)
+  cha            Int             @default(10)
+  currentStreak  Int             @default(0) @map("current_streak")
+  longestStreak  Int             @default(0) @map("longest_streak")
+  lastActiveDate String?         @map("last_active_date")
+  createdAt      DateTime        @default(now()) @map("created_at")
+
+  // Relational Entities
+  quests         Quest[]
+  questLogs      QuestLog[]
+  inventoryItems InventoryItem[]
+  transactions   Transaction[]
+  titles         Title[]
+  bossRaids      BossRaid[]
+  customRewards  CustomReward[]
+
+  @@map("users")
+}
+
+model Quest {
+  id          String       @id @default(uuid())
+  userId      String       @map("user_id")
+  title       String
+  description String       @default("")
+  category    SkillTree    @default(mind)
+  difficulty  Difficulty   @default(medium)
+  recurrence  Recurrence   @default(none)
+  isActive    Boolean      @default(true) @map("is_active")
+  isCompleted Boolean      @default(false) @map("is_completed")
+  dueDate     DateTime?    @map("due_date")
+  completedAt DateTime?    @map("completed_at")
+  createdAt   DateTime     @default(now()) @map("created_at")
+
+  user        User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+  questLogs   QuestLog[]
+
+  @@index([userId, isCompleted])
+  @@map("quests")
+}
+
+model QuestLog {
+  id                 String       @id @default(uuid())
+  questId            String       @map("quest_id")
+  userId             String       @map("user_id")
+  questTitle         String       @map("quest_title")
+  xpAwarded          Int          @map("xp_awarded")
+  goldAwarded        Int          @map("gold_awarded")
+  streakAtCompletion Int          @map("streak_at_completion")
+  completedAt        DateTime     @default(now()) @map("completed_at")
+
+  user               User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+  quest              Quest        @relation(fields: [questId], references: [id], onDelete: Cascade)
+  transactions       Transaction[]
+
+  @@index([userId, completedAt])
+  @@map("quest_logs")
+}
+
+model InventoryItem {
+  id         String       @id @default(uuid())
+  userId     String       @map("user_id")
+  itemId     String       @map("item_id")
+  quantity   Int          @default(1)
+  isEquipped Boolean      @default(false) @map("is_equipped")
+  acquiredAt DateTime     @default(now()) @map("acquired_at")
+
+  user       User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+  shopItem   ShopItem     @relation(fields: [itemId], references: [id], onDelete: Cascade)
+
+  @@index([userId, isEquipped])
+  @@map("inventory")
+}
+
+model ShopItem {
+  id             String          @id @default(uuid())
+  name           String
+  description    String
+  category       String
+  rarity         String
+  cost           Int
+  bonusStat      String?         @map("bonus_stat")
+  bonusValue     Int             @default(0) @map("bonus_value")
+  icon           String
+  inventoryItems InventoryItem[]
+
+  @@map("shop_items")
+}
+
+model Transaction {
+  id                String    @id @default(uuid())
+  userId            String    @map("user_id")
+  type              String
+  amountGold        Int       @default(0) @map("amount_gold")
+  amountXp          Int       @default(0) @map("amount_xp")
+  description       String
+  relatedQuestLogId String?   @map("related_quest_log_id")
+  createdAt         DateTime  @default(now()) @map("created_at")
+
+  user              User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  questLog          QuestLog? @relation(fields: [relatedQuestLogId], references: [id], onDelete: SetNull)
+
+  @@index([userId, createdAt])
+  @@map("transactions")
+}
+
+model Title {
+  id         String   @id @default(uuid())
+  userId     String   @map("user_id")
+  name       String
+  criteria   String
+  unlockedAt DateTime @default(now()) @map("unlocked_at")
+
+  user       User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("titles")
+}
+
+model BossRaid {
+  id          String   @id @default(uuid())
+  userId      String   @map("user_id")
+  bossName    String   @map("boss_name")
+  bossTitle   String   @map("boss_title")
+  currentHp   Int      @map("current_hp")
+  maxHp       Int      @map("max_hp")
+  isDefeated  Boolean  @default(false) @map("is_defeated")
+  rewardGold  Int      @map("reward_gold")
+  rewardXp    Int      @map("reward_xp")
+  createdAt   DateTime @default(now()) @map("created_at")
+
+  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("boss_raids")
+}
+
+model CustomReward {
+  id        String   @id @default(uuid())
+  userId    String   @map("user_id")
+  title     String
+  cost      Int
+  icon      String   @default("gift")
+  createdAt DateTime @default(now()) @map("created_at")
+
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("custom_rewards")
+}

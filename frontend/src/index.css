@@ -18,6 +18,12 @@
   --color-xp: #F97316;
   --color-xp-glow: rgba(249, 115, 22, 0.4);
 
+  /* High-Contrast Accessible Text Colors */
+  --color-text-main: #F8FAFC;
+  --color-text-secondary: #E2E8F0;
+  --color-text-muted: #CBD5E1;
+  --color-text-dim: #94A3B8;
+
   --tree-mind: #38BDF8;
   --tree-body: #34D399;
   --tree-craft: #A78BFA;
@@ -57,6 +63,37 @@ body {
   overflow-x: hidden;
   -webkit-font-smoothing: antialiased;
 }
+
+body, button, input, select, textarea {
+  color: #F8FAFC;
+}
+
+h1, h2, h3, h4, h5, h6 {
+  color: #FFFFFF;
+}
+
+/* High-Contrast Visibility Utilities */
+.text-white { color: #FFFFFF !important; }
+.text-slate-100 { color: #F1F5F9 !important; }
+.text-slate-200 { color: #E2E8F0 !important; }
+.text-slate-300 { color: #CBD5E1 !important; }
+.text-slate-400 { color: #94A3B8 !important; }
+.text-slate-500 { color: #64748B !important; }
+.text-amber-300 { color: #FCD34D !important; }
+.text-amber-400 { color: #FBBF24 !important; }
+.text-amber-500 { color: #F59E0B !important; }
+.text-yellow-300 { color: #FDE047 !important; }
+.text-yellow-400 { color: #FACC15 !important; }
+.text-red-300 { color: #FCA5A5 !important; }
+.text-red-400 { color: #F87171 !important; }
+.text-purple-300 { color: #D8B4FE !important; }
+.text-purple-400 { color: #C084FC !important; }
+.text-emerald-300 { color: #6EE7B7 !important; }
+.text-emerald-400 { color: #34D399 !important; }
+.text-pink-300 { color: #F472B6 !important; }
+.text-pink-400 { color: #F472B6 !important; }
+.text-blue-300 { color: #93C5FD !important; }
+.text-blue-400 { color: #60A5FA !important; }
 
 /* Accessibility Focus States */
 :focus-visible {
