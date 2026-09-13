@@ -12,10 +12,25 @@ const JWT_SECRET = process.env.JWT_SECRET || 'chronoslayer_divine_secret_key_cha
 
 function createDefaultQuests(userId: string) {
   const starterQuests = [
+    // Mind Tree (INT)
     { title: 'Deep Study: 45m Focused Research & Learning', description: 'Immerse in single-task intellectual focus without tab hopping.', attribute: 'INT', category: 'mind', difficulty: 'Medium', quest_type: 'Daily', recurrence: 'daily' },
+    { title: 'Algorithm Mastery & System Architecture Run', description: 'Solve a complex technical problem or review core system designs.', attribute: 'INT', category: 'mind', difficulty: 'Hard', quest_type: 'Daily', recurrence: 'daily' },
+    { title: 'Read 20 Pages of Heavy Non-Fiction / Science', description: 'Expand your mental model by absorbing high-density literature.', attribute: 'INT', category: 'mind', difficulty: 'Easy', quest_type: 'Daily', recurrence: 'daily' },
+
+    // Body Tree (VIT)
     { title: 'Morning Mobility & 20m Physical Conditioning', description: 'Hydrate with water and complete morning bodyweight fitness.', attribute: 'VIT', category: 'body', difficulty: 'Easy', quest_type: 'Daily', recurrence: 'daily' },
-    { title: 'Build & Ship a LifeRPG Feature Component', description: 'Write clean code, document logic, and push an authoritative commit.', attribute: 'STR', category: 'craft', difficulty: 'Hard', quest_type: 'Daily', recurrence: 'daily' },
-    { title: 'Digital Sunset & Habit Reflection', description: 'Power down screens before sleep and review accomplishments in the Chronicle.', attribute: 'CHA', category: 'discipline', difficulty: 'Trivial', quest_type: 'Daily', recurrence: 'daily' }
+    { title: '10,000 Paces March (Cardio Endurance)', description: 'Hit your daily step goal to sustain energy and combat fatigue.', attribute: 'VIT', category: 'body', difficulty: 'Medium', quest_type: 'Daily', recurrence: 'daily' },
+    { title: 'Citadel Hydration: 3 Liters Pure Water', description: 'Nourish every cell and sustain cognitive sharpness throughout the day.', attribute: 'VIT', category: 'body', difficulty: 'Trivial', quest_type: 'Daily', recurrence: 'daily' },
+
+    // Craft Tree (STR)
+    { title: 'Build & Ship a Production Feature Component', description: 'Write clean code, document logic, and push an authoritative commit.', attribute: 'STR', category: 'craft', difficulty: 'Hard', quest_type: 'Daily', recurrence: 'daily' },
+    { title: 'Code Refactoring & Technical Debt Cleanse', description: 'Identify messy routines, simplify abstractions, and improve test coverage.', attribute: 'STR', category: 'craft', difficulty: 'Medium', quest_type: 'Daily', recurrence: 'daily' },
+    { title: 'Guild Chronicle & Knowledge Base Contribution', description: 'Write a technical note or document an architectural learning.', attribute: 'STR', category: 'craft', difficulty: 'Easy', quest_type: 'Daily', recurrence: 'daily' },
+
+    // Discipline Tree (CHA)
+    { title: 'Digital Sunset & Habit Reflection', description: 'Power down screens before sleep and review accomplishments in the Chronicle.', attribute: 'CHA', category: 'discipline', difficulty: 'Trivial', quest_type: 'Daily', recurrence: 'daily' },
+    { title: 'Morning Tactical Standup: 3 Crucial Deeds', description: 'Define the 3 highest leverage tasks before opening any message inbox.', attribute: 'CHA', category: 'discipline', difficulty: 'Easy', quest_type: 'Daily', recurrence: 'daily' },
+    { title: 'Weekly Epic Guild Review & Strategy Planning', description: 'Analyze your weekly XP, streak multipliers, and plan upcoming quests.', attribute: 'CHA', category: 'discipline', difficulty: 'Legendary', quest_type: 'Milestone', recurrence: 'weekly' }
   ];
 
   const insertQuest = db.prepare(`

@@ -42,7 +42,9 @@ interface RpgStore {
   loadUserData: () => Promise<void>;
   setUser: (u: User | null) => void;
   setCharacter: (c: Character | null) => void;
+  setBoss: (b: Boss | null) => void;
   setQuests: (q: Quest[]) => void;
+  addQuest: (q: Quest) => void;
   setActiveTab: (tab: 'quests' | 'map' | 'boss' | 'armory' | 'chronicle' | 'rewards') => void;
   setShowMapInArena: (val: boolean) => void;
   showToast: (msg: string) => void;
@@ -82,7 +84,7 @@ export const useRpgStore = create<RpgStore>((set, get) => ({
   customRewards: [],
   isLoading: true,
   activeTab: 'quests',
-  showMapInArena: true,
+  showMapInArena: false,
   isMuted: soundEngine.getMuted(),
   toastMessage: null,
 
@@ -126,7 +128,9 @@ export const useRpgStore = create<RpgStore>((set, get) => ({
 
   setUser: (user) => set({ user }),
   setCharacter: (character) => set({ character }),
+  setBoss: (boss) => set({ boss }),
   setQuests: (quests) => set({ quests }),
+  addQuest: (quest) => set((state) => ({ quests: [quest, ...state.quests] })),
   setActiveTab: (activeTab) => set({ activeTab }),
   setShowMapInArena: (showMapInArena) => set({ showMapInArena }),
   

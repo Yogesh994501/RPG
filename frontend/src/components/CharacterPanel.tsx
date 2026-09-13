@@ -93,7 +93,7 @@ export const CharacterPanel: React.FC<CharacterPanelProps> = ({
             <Award size={13} className="flex-shrink-0" />
             <span className="truncate">{user.title || 'Novice Adventurer'}</span>
           </p>
-          <p className="text-[10px] text-slate-400 mt-0.5 font-mono truncate">
+          <p className="text-[10px] text-slate-200 mt-0.5 font-mono truncate font-medium">
             TZ: {user.timezone || 'Local'}
           </p>
         </div>
@@ -227,11 +227,11 @@ export const CharacterPanel: React.FC<CharacterPanelProps> = ({
           ============================================================ */}
       <div className="mt-4">
         <div className="flex items-center justify-between mb-2">
-          <h3 className="panel-title text-xs mb-0 text-slate-300">
+          <h3 className="panel-title text-xs mb-0 text-slate-200">
             <Shield size={14} className="text-amber-400" />
             <span>Equipment Paper-Doll</span>
           </h3>
-          <span className="text-[10px] text-slate-400 font-mono">
+          <span className="text-[10px] text-amber-300 font-bold font-mono">
             {equippedItems.length}/4 Slots
           </span>
         </div>
@@ -320,16 +320,16 @@ export const CharacterPanel: React.FC<CharacterPanelProps> = ({
       </div>
 
       {/* Streaks & Discipline */}
-      <div className="mt-4 p-2.5 rounded-lg bg-slate-900/70 border border-slate-800">
+      <div className="mt-4 p-2.5 rounded-lg bg-slate-900 border border-slate-800">
         <div className="flex items-center justify-between text-xs font-semibold mb-1">
-          <span className="text-slate-400 flex items-center gap-1">
+          <span className="text-slate-200 flex items-center gap-1">
             <Flame size={13} className="text-red-400" /> Active Streak
           </span>
           <span className="text-red-400 font-bold">{character.current_streak} Days</span>
         </div>
-        <div className="flex items-center justify-between text-[11px] text-slate-500">
+        <div className="flex items-center justify-between text-[11px] text-slate-300">
           <span>Personal Record</span>
-          <span className="text-slate-300 font-semibold">{character.longest_streak} Days</span>
+          <span className="text-white font-bold">{character.longest_streak} Days</span>
         </div>
       </div>
     </aside>

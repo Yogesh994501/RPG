@@ -1,7 +1,7 @@
 import { Router, Response } from 'express';
 import { db } from '../db/database.js';
 import { authGuard, AuthRequest } from '../middleware/auth.js';
-import { getOrCreateBoss, executeBossAttack } from '../services/bossEngine.js';
+import { getOrCreateBoss, executeBossAttack, getTitanBestiary, selectBossTarget } from '../services/bossEngine.js';
 
 const router = Router();
 
@@ -37,6 +37,33 @@ router.get('/', authGuard, (req: AuthRequest, res: Response): void => {
     });
   } catch (err: any) {
     res.status(500).json({ error: err.message });
+  }
+});
+
+// GET /api/boss/bestiary
+router.get('/bestiary', authGuard, (req: AuthRequest, res: Response): void => {
+  try {
+    const userId = req.user!.id;
+    const titans = getTitanBestiary(userId);
+    res.json({ success: true, titans });
+  } catch (err: any) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// POST /api/boss/select
+router.post('/select', authGuard, (req: AuthRequest, res: Response): void => {
+  try {
+    const userId = req.user!.id;
+    const { bossName } = req.body;
+    if (!bossName) {
+      res.status(400).json({ error: 'bossName is required' });
+      return;
+    }
+    const boss = selectBossTarget(userId, bossName);
+    res.json({ success: true, boss });
+  } catch (err: any) {
+    res.status(400).json({ error: err.message });
   }
 });
 

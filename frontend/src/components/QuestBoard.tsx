@@ -22,6 +22,7 @@ interface QuestBoardProps {
   quests: Quest[];
   onCompleteQuest: (questId: string, event?: React.MouseEvent) => void;
   onOpenNewQuest: () => void;
+  onOpenGuildBounties?: () => void;
   onEditQuest: (quest: Quest) => void;
   onDeleteQuest: (questId: string) => void;
 }
@@ -30,6 +31,7 @@ export const QuestBoard: React.FC<QuestBoardProps> = ({
   quests,
   onCompleteQuest,
   onOpenNewQuest,
+  onOpenGuildBounties,
   onEditQuest,
   onDeleteQuest
 }) => {
@@ -96,15 +98,27 @@ export const QuestBoard: React.FC<QuestBoardProps> = ({
         <div className="flex items-center gap-2">
           <Scroll size={20} className="text-amber-400" />
           <h2 className="panel-title text-base font-bold">The Quest Board</h2>
-          <span className="text-xs text-slate-400 font-mono">
+          <span className="text-xs text-amber-300 font-bold font-mono">
             ({quests.filter(q => !q.is_completed).length} active)
           </span>
         </div>
 
-        <button onClick={onOpenNewQuest} className="rpg-btn rpg-btn-gold text-xs">
-          <Plus size={15} />
-          <span>Summon Quest</span>
-        </button>
+        <div className="flex items-center gap-2">
+          {onOpenGuildBounties && (
+            <button
+              onClick={onOpenGuildBounties}
+              className="rpg-btn border-amber-600/60 bg-amber-950/40 text-amber-300 hover:bg-amber-900/60 text-xs flex items-center gap-1.5 px-2.5 py-1.5 rounded transition"
+              title="Browse the Study Guild's 16 official bounty quest templates"
+            >
+              <Sparkles size={14} className="text-amber-400" />
+              <span>Guild Bounties</span>
+            </button>
+          )}
+          <button onClick={onOpenNewQuest} className="rpg-btn rpg-btn-gold text-xs">
+            <Plus size={15} />
+            <span>Summon Quest</span>
+          </button>
+        </div>
       </div>
 
       {/* Controls / Search & Filters */}
@@ -136,10 +150,10 @@ export const QuestBoard: React.FC<QuestBoardProps> = ({
           <div className="ml-auto flex items-center gap-2">
             <button
               onClick={() => setShowCompleted(!showCompleted)}
-              className={`text-xs px-2.5 py-1 rounded border transition ${
+              className={`text-xs px-2.5 py-1 rounded border transition font-medium ${
                 showCompleted
-                  ? 'bg-amber-500/20 border-amber-500/40 text-amber-300'
-                  : 'bg-slate-900 border-slate-800 text-slate-400 hover:text-white'
+                  ? 'bg-amber-950 border-amber-500 text-amber-300'
+                  : 'bg-slate-900 border-slate-700 text-slate-200 hover:text-white hover:border-slate-500'
               }`}
             >
               {showCompleted ? 'Showing Archived' : 'Show Archived'}
@@ -149,7 +163,7 @@ export const QuestBoard: React.FC<QuestBoardProps> = ({
 
         {/* Skill Tree Filter */}
         <div className="flex items-center gap-1.5 flex-wrap text-xs">
-          <span className="text-slate-500 text-[11px] font-semibold flex items-center gap-1 mr-1">
+          <span className="text-slate-300 text-[11px] font-semibold flex items-center gap-1 mr-1">
             <Filter size={12} /> Skill Tree:
           </span>
           {[
@@ -162,10 +176,10 @@ export const QuestBoard: React.FC<QuestBoardProps> = ({
             <button
               key={tree.id}
               onClick={() => setSelectedCategory(tree.id)}
-              className={`px-2.5 py-1 rounded-lg text-[11px] font-bold transition ${
+              className={`px-2.5 py-1 rounded-lg text-[11px] font-bold transition border ${
                 selectedCategory === tree.id
-                  ? 'bg-amber-400 text-slate-950 shadow-sm'
-                  : 'bg-slate-900 text-slate-400 hover:text-white border border-slate-800'
+                  ? 'bg-amber-500 border-amber-400 text-black shadow-md'
+                  : 'bg-slate-900 text-slate-200 hover:text-white border-slate-700 hover:border-slate-500'
               }`}
             >
               {tree.label}
@@ -174,8 +188,8 @@ export const QuestBoard: React.FC<QuestBoardProps> = ({
         </div>
       </div>
 
-      {/* Quest Cards List */}
-      <div className="space-y-2.5">
+      {/* Quest Cards List with Internal Scrollbar to Prevent Page Over-Scroll */}
+      <div className="space-y-2.5 max-h-[520px] overflow-y-auto custom-scrollbar pr-1">
         {filteredQuests.length === 0 ? (
           <div className="text-center py-12 px-4 rounded-xl border border-dashed border-slate-800 bg-slate-900/30">
             <Scroll size={36} className="mx-auto text-slate-600 mb-2" />

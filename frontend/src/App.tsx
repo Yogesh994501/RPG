@@ -10,6 +10,8 @@ import { ArmoryShop } from './components/ArmoryShop';
 import { ChronicleView } from './components/ChronicleView';
 import { CustomRewardsView } from './components/CustomRewardsView';
 import { AuthModal } from './components/AuthModal';
+import { GuildBountyModal } from './components/GuildBountyModal';
+import { TitanBestiaryModal } from './components/TitanBestiaryModal';
 import { LevelUpCelebration } from './components/LevelUpCelebration';
 import { LootChestModal, LootReward } from './components/LootChestModal';
 import { QuestSkeleton, DashboardSkeleton } from './components/LoadingSkeleton';
@@ -64,6 +66,8 @@ export function App() {
     loadUserData,
     setUser,
     setCharacter,
+    setBoss,
+    addQuest,
     setActiveTab,
     setShowMapInArena,
     toggleMute,
@@ -85,6 +89,8 @@ export function App() {
   const [isQuestModalOpen, setIsQuestModalOpen] = useState(false);
   const [editingQuest, setEditingQuest] = useState<Quest | null>(null);
   const [isAuthModalOpen, setIsAuthModalOpen] = useState(false);
+  const [isBountyModalOpen, setIsBountyModalOpen] = useState(false);
+  const [isBestiaryModalOpen, setIsBestiaryModalOpen] = useState(false);
   const [levelUpEvent, setLevelUpEvent] = useState<LevelUpEvent | null>(null);
   const [lootChest, setLootChest] = useState<LootReward | null>(null);
 
@@ -237,7 +243,7 @@ export function App() {
       />
 
       {/* Mobile Tab Bar */}
-      <div className="flex sm:hidden items-center justify-around bg-slate-950 border-b border-slate-800 py-2 px-1 text-xs">
+      <div className="mobile-only items-center justify-around bg-slate-950 border-b border-slate-800 py-2 px-1 text-xs">
         <button
           onClick={() => setActiveTab('map')}
           className={`flex flex-col items-center gap-1 ${activeTab === 'map' ? 'text-amber-400 font-bold' : 'text-slate-400'}`}
@@ -317,13 +323,13 @@ export function App() {
         {/* Center Column: Active View */}
         <div className="space-y-4">
           {/* Desktop Navigation Tabs */}
-          <div className="hidden sm:flex items-center gap-2 border-b border-slate-800/80 pb-2">
+          <div className="desktop-only items-center gap-2 border-b border-slate-800/80 pb-2 flex-wrap">
             <button
               onClick={() => setActiveTab('quests')}
               className={`rpg-btn text-xs ${activeTab === 'quests' ? 'rpg-btn-gold' : 'rpg-btn-secondary'}`}
             >
               <Scroll size={15} />
-              <span>Quests & Arena</span>
+              <span>Quest Board</span>
             </button>
             <button
               onClick={() => setActiveTab('map')}
@@ -383,87 +389,74 @@ export function App() {
               <DashboardSkeleton />
             ) : (
               <>
-              {/* Quick View Mode Switcher */}
-              <div className="flex items-center justify-between bg-slate-950/70 p-2.5 rounded-xl border border-slate-800 text-xs mb-3">
-                <span className="text-slate-400 font-mono text-[11px] flex items-center gap-1.5">
-                  <Compass size={14} className="text-amber-400" />
-                  <span>Realm View Mode:</span>
-                </span>
-                <div className="flex gap-1.5">
-                  <button
-                    onClick={() => setShowMapInArena(true)}
-                    className={`px-3 py-1 rounded-lg text-xs font-bold transition flex items-center gap-1.5 ${
-                      showMapInArena ? 'bg-amber-500/25 text-amber-300 border border-amber-500/60 shadow-sm' : 'text-slate-400 hover:text-white bg-slate-900 border border-slate-800'
-                    }`}
-                  >
-                    <span>🗺️ 2D Walkable Realm</span>
-                    <span className="text-[10px] bg-black/40 px-1 py-0.2 rounded font-mono text-amber-400 font-bold">WASD</span>
-                  </button>
-                  <button
-                    onClick={() => setShowMapInArena(false)}
-                    className={`px-3 py-1 rounded-lg text-xs font-bold transition flex items-center gap-1.5 ${
-                      !showMapInArena ? 'bg-amber-500/25 text-amber-300 border border-amber-500/60 shadow-sm' : 'text-slate-400 hover:text-white bg-slate-900 border border-slate-800'
-                    }`}
-                  >
-                    <span>⚔️ 1v1 Battle Arena</span>
-                  </button>
+                {/* The Quest Board - Placed Front and Center to Prevent Unnecessary Scrolling */}
+                <QuestBoard
+                  quests={quests}
+                  onCompleteQuest={handleCompleteQuest}
+                  onOpenNewQuest={() => {
+                    setEditingQuest(null);
+                    setIsQuestModalOpen(true);
+                  }}
+                  onOpenGuildBounties={() => setIsBountyModalOpen(true)}
+                  onEditQuest={(q) => {
+                    setEditingQuest(q);
+                    setIsQuestModalOpen(true);
+                  }}
+                  onDeleteQuest={deleteQuest}
+                />
+
+                {/* Collapsible Arena & Realm Quick-Preview */}
+                <div className="rounded-xl border border-slate-800 bg-slate-950/80 p-3 shadow-inner">
+                  <div className="flex items-center justify-between text-xs flex-wrap gap-2">
+                    <div className="flex items-center gap-2">
+                      <Swords size={16} className="text-amber-400 animate-pulse" />
+                      <span className="text-white font-bold font-rpg tracking-wide">Battle Arena & Realm Explorer</span>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <button
+                        onClick={() => setShowMapInArena(!showMapInArena)}
+                        className="rpg-btn border-slate-700 bg-slate-900 text-slate-200 hover:text-white text-[11px] px-2.5 py-1 rounded"
+                      >
+                        {showMapInArena ? '▲ Hide Arena Preview' : '▼ Expand Arena Preview'}
+                      </button>
+                      <button
+                        onClick={() => setActiveTab('map')}
+                        className="rpg-btn border-amber-600/60 bg-amber-950/40 text-amber-300 hover:bg-amber-900/60 text-[11px] px-2.5 py-1 rounded"
+                      >
+                        🗺️ Full Map (WASD)
+                      </button>
+                    </div>
+                  </div>
+
+                  {showMapInArena && user && character && (
+                    <div className="mt-3 pt-3 border-t border-slate-800/80">
+                      {boss && (
+                        <BattleArena
+                          user={user}
+                          character={character}
+                          boss={boss}
+                          combatAttributes={combatAttributes}
+                          equippedItems={equippedItems}
+                          onAttackBoss={handleAttackBoss}
+                          onOpenBestiary={() => setIsBestiaryModalOpen(true)}
+                          isLunging={isLunging}
+                          isRecoiling={isRecoiling}
+                          combatNumber={combatNumber}
+                        />
+                      )}
+                    </div>
+                  )}
                 </div>
-              </div>
-
-              {/* Show either World Map or Battle Arena based on toggle */}
-              {user && character && (
-                showMapInArena ? (
-                  <WorldMap
-                    user={user}
-                    character={character}
-                    onNavigateTab={(tab) => setActiveTab(tab)}
-                    onAwardBonus={(gold, xp, msg) => {
-                      showToast(msg);
-                      api.getCharacter().then((res) => {
-                        if (res.character) setCharacter(res.character);
-                      });
-                    }}
-                  />
-                ) : (
-                  boss && (
-                    <BattleArena
-                      user={user}
-                      character={character}
-                      boss={boss}
-                      combatAttributes={combatAttributes}
-                      equippedItems={equippedItems}
-                      onAttackBoss={handleAttackBoss}
-                      isLunging={isLunging}
-                      isRecoiling={isRecoiling}
-                      combatNumber={combatNumber}
-                    />
-                  )
-                )
-              )}
-
-              {/* The Quest Board */}
-              <QuestBoard
-                quests={quests}
-                onCompleteQuest={handleCompleteQuest}
-                onOpenNewQuest={() => {
-                  setEditingQuest(null);
-                  setIsQuestModalOpen(true);
-                }}
-                onEditQuest={(q) => {
-                  setEditingQuest(q);
-                  setIsQuestModalOpen(true);
-                }}
-                onDeleteQuest={deleteQuest}
-              />
-            </>
-          )
-        )}
+              </>
+            )
+          )}
 
           {activeTab === 'boss' && (
             <BossRaid
               boss={boss}
               combatAttributes={combatAttributes}
               onAttackBoss={handleAttackBoss}
+              onOpenBestiary={() => setIsBestiaryModalOpen(true)}
             />
           )}
 
@@ -507,29 +500,29 @@ export function App() {
       </main>
 
       {/* Footer / Shortcuts */}
-      <footer className="mt-auto border-t border-slate-900 bg-slate-950/80 py-4 px-6 text-center text-xs text-slate-500">
-        <div className="flex flex-wrap items-center justify-center gap-4 mb-2">
-          <span>Keyboard Runes:</span>
-          <span className="bg-slate-900 px-2 py-0.5 rounded border border-slate-800 text-[11px] font-mono text-slate-300">
+      <footer className="mt-auto border-t border-slate-900 bg-slate-950 py-4 px-6 text-center text-xs text-slate-300">
+        <div className="flex flex-wrap items-center justify-center gap-3 mb-2">
+          <span className="text-amber-400 font-bold uppercase tracking-wider text-[11px]">Keyboard Runes:</span>
+          <span className="bg-slate-900 px-2.5 py-1 rounded border border-slate-700 text-[11px] font-mono text-amber-300 font-bold">
             [Q/N] New Quest
           </span>
-          <span className="bg-slate-900 px-2 py-0.5 rounded border border-slate-800 text-[11px] font-mono text-slate-300">
+          <span className="bg-slate-900 px-2.5 py-1 rounded border border-slate-700 text-[11px] font-mono text-amber-300 font-bold">
             [B] Boss Raid
           </span>
-          <span className="bg-slate-900 px-2 py-0.5 rounded border border-slate-800 text-[11px] font-mono text-slate-300">
+          <span className="bg-slate-900 px-2.5 py-1 rounded border border-slate-700 text-[11px] font-mono text-amber-300 font-bold">
             [S] Armory
           </span>
-          <span className="bg-slate-900 px-2 py-0.5 rounded border border-slate-800 text-[11px] font-mono text-slate-300">
+          <span className="bg-slate-900 px-2.5 py-1 rounded border border-slate-700 text-[11px] font-mono text-amber-300 font-bold">
             [C] Chronicle
           </span>
-          <span className="bg-slate-900 px-2 py-0.5 rounded border border-slate-800 text-[11px] font-mono text-slate-300">
+          <span className="bg-slate-900 px-2.5 py-1 rounded border border-slate-700 text-[11px] font-mono text-amber-300 font-bold">
             [M] Mute Sound
           </span>
-          <span className="bg-slate-900 px-2 py-0.5 rounded border border-slate-800 text-[11px] font-mono text-slate-300">
+          <span className="bg-slate-900 px-2.5 py-1 rounded border border-slate-700 text-[11px] font-mono text-amber-300 font-bold">
             [ESC] Close Modal
           </span>
         </div>
-        <p>
+        <p className="text-slate-400 text-[11px]">
           ChronoSlayer &copy; 2026. Empowering real-world discipline through server-authoritative RPG mechanics.
         </p>
       </footer>
@@ -561,6 +554,26 @@ export function App() {
       <LootChestModal
         loot={lootChest}
         onClose={() => setLootChest(null)}
+      />
+
+      {/* Guild Bounty Board Modal */}
+      <GuildBountyModal
+        isOpen={isBountyModalOpen}
+        onClose={() => setIsBountyModalOpen(false)}
+        onAdopted={(newQuest) => {
+          addQuest(newQuest);
+          showToast(`📜 Adopted Guild Bounty: "${newQuest.title}"!`);
+        }}
+      />
+
+      {/* Titan Bestiary Pantheon Modal */}
+      <TitanBestiaryModal
+        isOpen={isBestiaryModalOpen}
+        onClose={() => setIsBestiaryModalOpen(false)}
+        onSelectBoss={(newBoss) => {
+          setBoss(newBoss);
+          showToast(`⚔️ Target switched to ${newBoss.boss_name}!`);
+        }}
       />
     </div>
   );

@@ -9,6 +9,7 @@ interface BattleArenaProps {
   combatAttributes: CombatAttributes | null;
   equippedItems: InventoryItem[];
   onAttackBoss: () => Promise<any>;
+  onOpenBestiary?: () => void;
   isLunging: boolean;
   isRecoiling: boolean;
   combatNumber: { amount: number; isCrit: boolean } | null;
@@ -21,6 +22,7 @@ export const BattleArena: React.FC<BattleArenaProps> = ({
   combatAttributes,
   equippedItems,
   onAttackBoss,
+  onOpenBestiary,
   isLunging,
   isRecoiling,
   combatNumber
@@ -49,9 +51,21 @@ export const BattleArena: React.FC<BattleArenaProps> = ({
             Battle Arena: The Abyssal Confrontation
           </span>
         </div>
-        <div className="flex items-center gap-1.5 text-slate-400 font-mono text-[11px]">
-          <Clock size={12} className="text-amber-400" />
-          <span>Daily Reset in 16h 18m</span>
+        <div className="flex items-center gap-2">
+          {onOpenBestiary && (
+            <button
+              onClick={onOpenBestiary}
+              className="rpg-btn border-red-700/60 bg-red-950/60 text-red-300 hover:bg-red-900/80 text-[11px] flex items-center gap-1.5 px-2.5 py-0.5 rounded transition"
+              title="Browse all 8 Titans & switch targets"
+            >
+              <Skull size={12} className="text-red-400" />
+              <span>Switch Titan</span>
+            </button>
+          )}
+          <div className="flex items-center gap-1.5 text-slate-400 font-mono text-[11px]">
+            <Clock size={12} className="text-amber-400" />
+            <span>Daily Reset in 16h 18m</span>
+          </div>
         </div>
       </div>
 
@@ -149,11 +163,17 @@ export const BattleArena: React.FC<BattleArenaProps> = ({
               className="arena-boss-portrait" 
               style={{ width: 110, height: 110, minWidth: 110, minHeight: 110, maxWidth: 110, maxHeight: 110 }}
             >
-              <img
-                src="/assets/boss_malakor.jpg"
-                alt={boss.boss_name}
-                style={{ width: 110, height: 110, objectFit: 'cover', objectPosition: 'top', display: 'block' }}
-              />
+              {boss.boss_name.includes('Malakor') ? (
+                <img
+                  src="/assets/boss_malakor.jpg"
+                  alt={boss.boss_name}
+                  style={{ width: 110, height: 110, objectFit: 'cover', objectPosition: 'top', display: 'block' }}
+                />
+              ) : (
+                <div className="w-full h-full flex flex-col items-center justify-center bg-gradient-to-b from-red-950/80 to-slate-950 text-4xl">
+                  <span>{boss.boss_name.includes('Ignis') ? '🔥' : boss.boss_name.includes('Umbra') ? '👥' : boss.boss_name.includes('Chronos') ? '⌛' : boss.boss_name.includes('Apathy') ? '❄️' : boss.boss_name.includes('Sirena') ? '🌊' : boss.boss_name.includes('Vulcanus') ? '🌋' : '🌌'}</span>
+                </div>
+              )}
               <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-transparent pointer-events-none" />
             </div>
 

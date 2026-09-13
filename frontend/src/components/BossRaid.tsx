@@ -13,12 +13,14 @@ interface BossRaidProps {
     bossDefeated: boolean;
     combatLog: string;
   }>;
+  onOpenBestiary?: () => void;
 }
 
 export const BossRaid: React.FC<BossRaidProps> = ({
   boss,
   combatAttributes,
-  onAttackBoss
+  onAttackBoss,
+  onOpenBestiary
 }) => {
   const [isAttacking, setIsAttacking] = useState(false);
   const [combatLogs, setCombatLogs] = useState<string[]>([]);
@@ -71,9 +73,21 @@ export const BossRaid: React.FC<BossRaidProps> = ({
           <Skull size={20} className="text-red-500 animate-pulse" />
           <h2 className="panel-title text-base text-red-100 font-bold">World Boss Raid</h2>
         </div>
-        <span className="badge-tag bg-red-950 border border-red-700/60 text-red-300 font-bold">
-          Weekly Encounter
-        </span>
+        <div className="flex items-center gap-2">
+          {onOpenBestiary && (
+            <button
+              onClick={onOpenBestiary}
+              className="rpg-btn border-red-700/60 bg-red-950/60 text-red-300 hover:bg-red-900/80 text-xs flex items-center gap-1.5 px-2.5 py-1 rounded transition"
+              title="Browse the Titan Bestiary and challenge new bosses"
+            >
+              <Skull size={13} className="text-red-400" />
+              <span>Titan Bestiary</span>
+            </button>
+          )}
+          <span className="badge-tag bg-red-950 border border-red-700/60 text-red-300 font-bold">
+            Weekly Encounter
+          </span>
+        </div>
       </div>
 
       {/* Boss Avatar & Identity */}
@@ -100,20 +114,28 @@ export const BossRaid: React.FC<BossRaidProps> = ({
           }`}
           style={{ width: 130, height: 130, minWidth: 130, minHeight: 130, maxWidth: 130, maxHeight: 130 }}
         >
-          <img
-            src="/assets/boss_malakor.jpg"
-            alt={boss.boss_name}
-            style={{ width: 130, height: 130, objectFit: 'cover', objectPosition: 'top', display: 'block' }}
-          />
+          {boss.boss_name.includes('Malakor') ? (
+            <img
+              src="/assets/boss_malakor.jpg"
+              alt={boss.boss_name}
+              style={{ width: 130, height: 130, objectFit: 'cover', objectPosition: 'top', display: 'block' }}
+            />
+          ) : (
+            <div className="w-full h-full flex flex-col items-center justify-center bg-gradient-to-b from-red-950 to-slate-950 text-5xl">
+              <span className="drop-shadow-[0_0_15px_rgba(239,68,68,0.7)] animate-pulse">
+                {boss.boss_name.includes('Ignis') ? '🔥' : boss.boss_name.includes('Umbra') ? '👥' : boss.boss_name.includes('Chronos') ? '⌛' : boss.boss_name.includes('Apathy') ? '❄️' : boss.boss_name.includes('Sirena') ? '🌊' : boss.boss_name.includes('Vulcanus') ? '🌋' : '🌌'}
+              </span>
+            </div>
+          )}
           <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-transparent pointer-events-none" />
-          <span className="absolute bottom-1.5 left-1/2 -translate-x-1/2 text-[10px] font-rpg tracking-widest text-red-300 font-bold uppercase bg-black/60 px-2 py-0.5 rounded border border-red-900/60">
+          <span className="absolute bottom-1.5 left-1/2 -translate-x-1/2 text-[10px] font-rpg tracking-widest text-amber-300 font-bold uppercase bg-black/80 px-2 py-0.5 rounded border border-amber-500/60 truncate max-w-[120px]">
             {boss.boss_name}
           </span>
         </div>
         <h3 className="font-rpg text-lg font-bold text-white tracking-wide">
           {boss.boss_name}
         </h3>
-        <p className="text-xs text-red-300 font-medium">
+        <p className="text-xs text-red-300 font-semibold">
           {boss.boss_title}
         </p>
       </div>
@@ -121,10 +143,10 @@ export const BossRaid: React.FC<BossRaidProps> = ({
       {/* Boss Health Fantasy Bar */}
       <div className="fantasy-vial-container mt-4">
         <div className="vial-label-row text-red-300 text-xs">
-          <span className="flex items-center gap-1 font-semibold">
+          <span className="flex items-center gap-1 font-bold">
             <Flame size={13} className="text-red-400" /> Boss Vitality
           </span>
-          <span className="font-mono">
+          <span className="font-mono text-white font-bold">
             {boss.current_hp} / {boss.max_hp} ({hpPercent}%)
           </span>
         </div>
@@ -138,22 +160,22 @@ export const BossRaid: React.FC<BossRaidProps> = ({
 
       {/* Attribute Combat Contributions */}
       {combatAttributes && (
-        <div className="grid grid-cols-2 gap-2 my-4 text-[11px] bg-slate-950/60 p-2.5 rounded-lg border border-slate-800">
+        <div className="grid grid-cols-2 gap-2 my-4 text-[11px] bg-slate-950 p-2.5 rounded-lg border border-slate-800 shadow-inner">
           <div className="flex items-center justify-between text-amber-300">
-            <span className="flex items-center gap-1"><Swords size={12} /> Base Strike (STR):</span>
-            <span className="font-bold">{combatAttributes.baseDamage}</span>
+            <span className="flex items-center gap-1 font-semibold"><Swords size={12} /> Strike (STR):</span>
+            <span className="font-bold font-mono text-white text-xs">{combatAttributes.baseDamage}</span>
           </div>
           <div className="flex items-center justify-between text-purple-300">
-            <span className="flex items-center gap-1"><Zap size={12} /> Crit Chance (INT):</span>
-            <span className="font-bold">{combatAttributes.critChance}%</span>
+            <span className="flex items-center gap-1 font-semibold"><Zap size={12} /> Crit (INT):</span>
+            <span className="font-bold font-mono text-white text-xs">{combatAttributes.critChance}%</span>
           </div>
           <div className="flex items-center justify-between text-emerald-300">
-            <span className="flex items-center gap-1"><Zap size={12} /> Speed Combo (AGI):</span>
-            <span className="font-bold">{combatAttributes.comboMultiplier}x</span>
+            <span className="flex items-center gap-1 font-semibold"><Zap size={12} /> Combo (AGI):</span>
+            <span className="font-bold font-mono text-white text-xs">{combatAttributes.comboMultiplier}x</span>
           </div>
           <div className="flex items-center justify-between text-pink-300">
-            <span className="flex items-center gap-1"><Sparkles size={12} /> Raid Bounty (CHA):</span>
-            <span className="font-bold">{combatAttributes.bonusLootMultiplier}x</span>
+            <span className="flex items-center gap-1 font-semibold"><Sparkles size={12} /> Bounty (CHA):</span>
+            <span className="font-bold font-mono text-white text-xs">{combatAttributes.bonusLootMultiplier}x</span>
           </div>
         </div>
       )}

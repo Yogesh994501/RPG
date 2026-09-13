@@ -68,6 +68,14 @@ body, button, input, select, textarea {
   color: #F8FAFC;
 }
 
+button {
+  background: transparent;
+  border: none;
+  font-family: inherit;
+  cursor: pointer;
+  color: inherit;
+}
+
 h1, h2, h3, h4, h5, h6 {
   color: #FFFFFF;
 }
@@ -77,8 +85,8 @@ h1, h2, h3, h4, h5, h6 {
 .text-slate-100 { color: #F1F5F9 !important; }
 .text-slate-200 { color: #E2E8F0 !important; }
 .text-slate-300 { color: #CBD5E1 !important; }
-.text-slate-400 { color: #94A3B8 !important; }
-.text-slate-500 { color: #64748B !important; }
+.text-slate-400 { color: #CBD5E1 !important; } /* Upgraded for high contrast */
+.text-slate-500 { color: #94A3B8 !important; } /* Upgraded for high contrast */
 .text-amber-300 { color: #FCD34D !important; }
 .text-amber-400 { color: #FBBF24 !important; }
 .text-amber-500 { color: #F59E0B !important; }
@@ -94,6 +102,72 @@ h1, h2, h3, h4, h5, h6 {
 .text-pink-400 { color: #F472B6 !important; }
 .text-blue-300 { color: #93C5FD !important; }
 .text-blue-400 { color: #60A5FA !important; }
+
+/* Dark Theme Background Utilities */
+.bg-slate-950 { background-color: #020617 !important; }
+.bg-slate-900 { background-color: #0F172A !important; }
+.bg-slate-850 { background-color: #131C31 !important; }
+.bg-slate-800 { background-color: #1E293B !important; }
+.bg-slate-700 { background-color: #334155 !important; }
+.bg-black { background-color: #000000 !important; }
+.bg-amber-950 { background-color: #451A03 !important; }
+.bg-amber-900 { background-color: #78350F !important; }
+.bg-amber-500 { background-color: #F59E0B !important; }
+.bg-red-950 { background-color: #450A0A !important; }
+.bg-red-900 { background-color: #7F1D1D !important; }
+.bg-purple-950 { background-color: #3B0764 !important; }
+.bg-purple-900 { background-color: #581C87 !important; }
+.bg-emerald-950 { background-color: #022C22 !important; }
+.bg-emerald-900 { background-color: #064E3B !important; }
+.bg-cyan-950 { background-color: #083344 !important; }
+.bg-pink-950 { background-color: #500724 !important; }
+.bg-blue-950 { background-color: #172554 !important; }
+
+/* Alpha Transparency Backgrounds */
+.bg-slate-900\/60, [class*="bg-slate-900/60"] { background-color: rgba(15, 23, 42, 0.6) !important; }
+.bg-slate-900\/70, [class*="bg-slate-900/70"] { background-color: rgba(15, 23, 42, 0.7) !important; }
+.bg-slate-900\/80, [class*="bg-slate-900/80"] { background-color: rgba(15, 23, 42, 0.8) !important; }
+.bg-slate-950\/60, [class*="bg-slate-950/60"] { background-color: rgba(2, 6, 23, 0.6) !important; }
+.bg-slate-950\/70, [class*="bg-slate-950/70"] { background-color: rgba(2, 6, 23, 0.7) !important; }
+.bg-slate-950\/80, [class*="bg-slate-950/80"] { background-color: rgba(2, 6, 23, 0.8) !important; }
+.bg-amber-500\/15, [class*="bg-amber-500/15"] { background-color: rgba(245, 158, 11, 0.15) !important; }
+.bg-amber-500\/20, [class*="bg-amber-500/20"] { background-color: rgba(245, 158, 11, 0.20) !important; }
+.bg-amber-500\/25, [class*="bg-amber-500/25"] { background-color: rgba(245, 158, 11, 0.25) !important; }
+.bg-amber-950\/30, [class*="bg-amber-950/30"] { background-color: rgba(69, 26, 3, 0.3) !important; }
+.bg-amber-950\/40, [class*="bg-amber-950/40"] { background-color: rgba(69, 26, 3, 0.4) !important; }
+.bg-amber-950\/60, [class*="bg-amber-950/60"] { background-color: rgba(69, 26, 3, 0.6) !important; }
+.bg-red-950\/30, [class*="bg-red-950/30"] { background-color: rgba(69, 10, 10, 0.3) !important; }
+.bg-red-950\/40, [class*="bg-red-950/40"] { background-color: rgba(69, 10, 10, 0.4) !important; }
+.bg-red-950\/60, [class*="bg-red-950/60"] { background-color: rgba(69, 10, 10, 0.6) !important; }
+.bg-red-950\/80, [class*="bg-red-950/80"] { background-color: rgba(69, 10, 10, 0.8) !important; }
+
+/* Border Utilities */
+.border-slate-950 { border-color: #020617 !important; }
+.border-slate-900 { border-color: #0F172A !important; }
+.border-slate-800 { border-color: #1E293B !important; }
+.border-slate-700 { border-color: #334155 !important; }
+.border-slate-600 { border-color: #475569 !important; }
+.border-amber-400 { border-color: #FBBF24 !important; }
+.border-amber-500 { border-color: #F59E0B !important; }
+.border-amber-600 { border-color: #D97706 !important; }
+.border-red-900 { border-color: #7F1D1D !important; }
+.border-red-800 { border-color: #991B1B !important; }
+.border-red-700 { border-color: #B91C1C !important; }
+.border-red-500 { border-color: #EF4444 !important; }
+.border-purple-800 { border-color: #6B21A8 !important; }
+.border-purple-500 { border-color: #A855F7 !important; }
+.border-emerald-800 { border-color: #065F46 !important; }
+.border-emerald-500 { border-color: #10B981 !important; }
+
+/* Responsive Desktop/Mobile Utilities */
+@media (max-width: 640px) {
+  .desktop-only { display: none !important; }
+  .mobile-only { display: flex !important; }
+}
+@media (min-width: 641px) {
+  .mobile-only { display: none !important; }
+  .desktop-only { display: flex !important; }
+}
 
 /* Accessibility Focus States */
 :focus-visible {
@@ -1001,7 +1075,6 @@ h1, h2, h3, h4, .font-rpg {
   display: block;
 }
 
-/* 4. Boss Raid Widget Portrait (Right Sidebar) */
 .boss-widget-portrait {
   width: 130px;
   height: 130px;
@@ -1016,6 +1089,9 @@ h1, h2, h3, h4, .font-rpg {
   position: relative;
   background-color: #07080C;
   box-shadow: 0 0 25px rgba(239, 68, 68, 0.35);
+  display: flex;
+  align-items: center;
+  justify-content: center;
 }
 
 .boss-widget-portrait img {
@@ -1026,6 +1102,39 @@ h1, h2, h3, h4, .font-rpg {
   object-fit: cover !important;
   object-position: top center !important;
   display: block;
+}
+
+.arena-boss-portrait {
+  width: 110px;
+  height: 110px;
+  min-width: 110px;
+  min-height: 110px;
+  max-width: 110px;
+  max-height: 110px;
+  border-radius: 16px;
+  border: 2px solid rgba(239, 68, 68, 0.8);
+  overflow: hidden;
+  position: relative;
+  background-color: #07080C;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+/* Custom Scrollbar for compact panels */
+.custom-scrollbar::-webkit-scrollbar {
+  width: 6px;
+}
+.custom-scrollbar::-webkit-scrollbar-track {
+  background: rgba(15, 23, 42, 0.6);
+  border-radius: 8px;
+}
+.custom-scrollbar::-webkit-scrollbar-thumb {
+  background: rgba(245, 158, 11, 0.4);
+  border-radius: 8px;
+}
+.custom-scrollbar::-webkit-scrollbar-thumb:hover {
+  background: rgba(245, 158, 11, 0.7);
 }
 
 /* Micro-Interaction: Anti-Cheat Shake Rejection */

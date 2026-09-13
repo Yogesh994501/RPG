@@ -40,6 +40,74 @@ function mapCategoryToAttribute(cat: string): string {
   }
 }
 
+export const GUILD_BOUNTY_TEMPLATES = [
+  // Mind Tree
+  { id: 'bounty_mind_deepwork', title: 'Deep Work: 60m Sprint', description: 'Complete a continuous 60-minute uninterrupted work session on your primary craft.', category: 'mind', attribute: 'INT', difficulty: 'Hard', quest_type: 'Daily', recurrence: 'daily' },
+  { id: 'bounty_mind_read', title: 'Arcane Lore: Read 25 Pages', description: 'Immerse in technical papers, non-fiction, or domain masterworks.', category: 'mind', attribute: 'INT', difficulty: 'Medium', quest_type: 'Daily', recurrence: 'daily' },
+  { id: 'bounty_mind_algo', title: 'Logic Trial: Solve Hard Problem', description: 'Tackle a challenging algorithmic, mathematical, or architectural problem.', category: 'mind', attribute: 'INT', difficulty: 'Hard', quest_type: 'Daily', recurrence: 'daily' },
+  { id: 'bounty_mind_vocab', title: 'Lexicon Mastery: 15 Terms', description: 'Learn and review 15 new foreign language or technical vocabulary items.', category: 'mind', attribute: 'INT', difficulty: 'Easy', quest_type: 'Daily', recurrence: 'daily' },
+
+  // Body Tree
+  { id: 'bounty_body_iron', title: 'Iron Temple: 45m Resistance Training', description: 'Lift weights, perform calisthenics, or complete rigorous physical exertion.', category: 'body', attribute: 'VIT', difficulty: 'Hard', quest_type: 'Daily', recurrence: 'daily' },
+  { id: 'bounty_body_cardio', title: 'Ranger Scout: 5km Cardio Run', description: 'Sustain aerobic endurance across a 5km trail, road, or treadmill pace.', category: 'body', attribute: 'VIT', difficulty: 'Hard', quest_type: 'Daily', recurrence: 'daily' },
+  { id: 'bounty_body_mobility', title: 'Joint Restoration & Stretching', description: 'Perform 15 minutes of dynamic mobility and spinal decompression.', category: 'body', attribute: 'VIT', difficulty: 'Easy', quest_type: 'Daily', recurrence: 'daily' },
+  { id: 'bounty_body_water', title: 'Elixir of Life: 3L Hydration', description: 'Maintain optimal cellular hydration from sunrise to sundown.', category: 'body', attribute: 'VIT', difficulty: 'Trivial', quest_type: 'Daily', recurrence: 'daily' },
+
+  // Craft Tree
+  { id: 'bounty_craft_commit', title: 'Masterwork Commit: Clean PR', description: 'Author a well-documented, test-backed pull request or code feature.', category: 'craft', attribute: 'STR', difficulty: 'Hard', quest_type: 'Daily', recurrence: 'daily' },
+  { id: 'bounty_craft_cleanse', title: 'Refactor Cleanse: Eliminate Debt', description: 'Prune dead code, optimize slow database queries, or modernize legacy modules.', category: 'craft', attribute: 'STR', difficulty: 'Medium', quest_type: 'Daily', recurrence: 'daily' },
+  { id: 'bounty_craft_design', title: 'Visual Guild: High-Fi Prototype', description: 'Craft an aesthetically stunning interface or wireframe mockup.', category: 'craft', attribute: 'STR', difficulty: 'Medium', quest_type: 'Daily', recurrence: 'daily' },
+  { id: 'bounty_craft_publish', title: 'Chronicle Publication: Tech Article', description: 'Share knowledge by writing and publishing an in-depth tutorial or post.', category: 'craft', attribute: 'STR', difficulty: 'Legendary', quest_type: 'Milestone', recurrence: 'weekly' },
+
+  // Discipline Tree
+  { id: 'bounty_disc_standup', title: 'Tactical Dawn: Plan Top 3 Goals', description: 'Prioritize your top 3 objectives before touching email or social feeds.', category: 'discipline', attribute: 'CHA', difficulty: 'Easy', quest_type: 'Daily', recurrence: 'daily' },
+  { id: 'bounty_disc_sunset', title: 'Digital Sunset: Sleep Routine', description: 'No blue-light screens within 60 minutes of sleep; prepare for tomorrow.', category: 'discipline', attribute: 'CHA', difficulty: 'Easy', quest_type: 'Daily', recurrence: 'daily' },
+  { id: 'bounty_disc_fast', title: 'Mindful Fuel: Zero Sugar Day', description: 'Fuel your vessel with whole foods, avoiding sugary snacks and energy crashes.', category: 'discipline', attribute: 'CHA', difficulty: 'Medium', quest_type: 'Daily', recurrence: 'daily' },
+  { id: 'bounty_disc_epic', title: 'Grand Grandmaster Review', description: 'Complete a full retrospective of your weekly deeds, gold, and XP progress.', category: 'discipline', attribute: 'CHA', difficulty: 'Legendary', quest_type: 'Milestone', recurrence: 'weekly' }
+];
+
+// GET /api/quests/guild-bounties
+router.get('/guild-bounties', authGuard, (req: AuthRequest, res: Response): void => {
+  res.json({ success: true, bounties: GUILD_BOUNTY_TEMPLATES });
+});
+
+// POST /api/quests/adopt-bounty
+router.post('/adopt-bounty', authGuard, (req: AuthRequest, res: Response): void => {
+  try {
+    const userId = req.user!.id;
+    const { bountyId } = req.body;
+    const template = GUILD_BOUNTY_TEMPLATES.find(b => b.id === bountyId);
+    if (!template) {
+      res.status(404).json({ error: 'Guild bounty template not found' });
+      return;
+    }
+
+    const questId = crypto.randomUUID();
+    const createdAt = new Date().toISOString();
+
+    db.prepare(`
+      INSERT INTO quests (id, user_id, title, description, attribute, category, difficulty, quest_type, recurrence, is_active, due_date, is_completed, created_at)
+      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, 1, null, 0, ?)
+    `).run(
+      questId,
+      userId,
+      template.title,
+      template.description,
+      template.attribute,
+      template.category,
+      template.difficulty,
+      template.quest_type,
+      template.recurrence,
+      createdAt
+    );
+
+    const quest = db.prepare('SELECT * FROM quests WHERE id = ?').get(questId);
+    res.status(201).json({ success: true, quest });
+  } catch (err: any) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
 // GET /api/quests
 router.get('/', authGuard, (req: AuthRequest, res: Response): void => {
   try {

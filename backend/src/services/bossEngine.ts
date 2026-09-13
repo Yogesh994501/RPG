@@ -25,6 +25,100 @@ export interface AttackResult {
   combatLog: string;
 }
 
+export interface TitanTemplate {
+  name: string;
+  title: string;
+  element: string;
+  icon: string;
+  lore: string;
+  hp: number;
+  gold: number;
+  xp: number;
+}
+
+export const TITAN_BESTIARY: TitanTemplate[] = [
+  {
+    name: 'Malakor',
+    title: 'Titan of Procrastination',
+    element: 'Void',
+    icon: '🌌',
+    lore: 'A behemoth born of postponed dreams and endless delays. His armor hardens whenever you say "tomorrow".',
+    hp: 800,
+    gold: 200,
+    xp: 450
+  },
+  {
+    name: 'Ignis',
+    title: 'Drake of Distraction',
+    element: 'Fire',
+    icon: '🔥',
+    lore: 'A restless serpentine drake whose blinding sparks lure your attention away into rabbit holes and feeds.',
+    hp: 1200,
+    gold: 300,
+    xp: 700
+  },
+  {
+    name: 'Umbra',
+    title: 'Shadow of Lethargy',
+    element: 'Shadow',
+    icon: '🌑',
+    lore: 'A creeping gloom that saps your vitality, making even the simplest deed feel like dragging iron chains.',
+    hp: 1600,
+    gold: 450,
+    xp: 1000
+  },
+  {
+    name: 'Chronos',
+    title: 'Lord of Wasted Hours',
+    element: 'Temporal',
+    icon: '⏳',
+    lore: 'A master of temporal theft. He distorts minutes into hours, consuming productive time in a blink.',
+    hp: 2500,
+    gold: 800,
+    xp: 2000
+  },
+  {
+    name: 'Apathy',
+    title: 'Frost Wyrm of Inaction',
+    element: 'Frost',
+    icon: '❄️',
+    lore: 'Her icy breath freezes ambition in place. Those who succumb become frozen statues in the snow plains of regret.',
+    hp: 3200,
+    gold: 1100,
+    xp: 2800
+  },
+  {
+    name: 'Sirena',
+    title: 'Phantom of the Infinite Feed',
+    element: 'Illusion',
+    icon: '📱',
+    lore: 'She sings a hypnotic digital melody of endless notifications, autoplay videos, and bottomless algorithmic feeds.',
+    hp: 4000,
+    gold: 1500,
+    xp: 3600
+  },
+  {
+    name: 'Vulcanus',
+    title: 'Colossus of Chronic Burnout',
+    element: 'Magma',
+    icon: '🌋',
+    lore: 'The volcanic titan that erupts when discipline turns into manic overwork without recovery or sleep.',
+    hp: 5500,
+    gold: 2200,
+    xp: 5000
+  },
+  {
+    name: "Aethelgard's Bane",
+    title: 'Sovereign of Chaos',
+    element: 'Cosmic',
+    icon: '👑',
+    lore: 'The supreme architect of aimless existence. Defeating him restores radiant harmony to your real-world realm.',
+    hp: 7500,
+    gold: 3500,
+    xp: 8000
+  }
+];
+
 export function getOrCreateBoss(userId: string): BossData {
   let boss = db.prepare(`
     SELECT * FROM boss_raids 
@@ -34,18 +128,12 @@ export function getOrCreateBoss(userId: string): BossData {
 
   if (!boss) {
     const bossId = crypto.randomUUID();
-    const bosses = [
-      { name: 'Malakor', title: 'Titan of Procrastination', hp: 800, gold: 200, xp: 450 },
-      { name: 'Ignis', title: 'Drake of Distraction', hp: 1200, gold: 300, xp: 700 },
-      { name: 'Umbra', title: 'Shadow of Lethargy', hp: 1600, gold: 450, xp: 1000 },
-      { name: 'Chronos', title: 'Lord of Wasted Hours', hp: 2500, gold: 800, xp: 2000 }
-    ];
 
     const defeatedCount = (db.prepare(`
       SELECT COUNT(*) as count FROM boss_raids WHERE user_id = ? AND is_defeated = 1
     `).get(userId) as { count: number }).count;
 
-    const template = bosses[defeatedCount % bosses.length];
+    const template = TITAN_BESTIARY[defeatedCount % TITAN_BESTIARY.length];
 
     db.prepare(`
       INSERT INTO boss_raids (id, user_id, boss_name, boss_title, current_hp, max_hp, is_defeated, reward_gold, reward_xp, created_at)
@@ -66,6 +154,62 @@ export function getOrCreateBoss(userId: string): BossData {
   }
 
   return boss;
+}
+
+export function getTitanBestiary(userId: string) {
+  const defeatedRows = db.prepare(`
+    SELECT boss_name, COUNT(*) as count 
+    FROM boss_raids 
+    WHERE user_id = ? AND is_defeated = 1 
+    GROUP BY boss_name
+  `).all(userId) as { boss_name: string; count: number }[];
+
+  const defeatedMap = new Map(defeatedRows.map(r => [r.boss_name, r.count]));
+
+  const currentBoss = db.prepare(`
+    SELECT * FROM boss_raids 
+    WHERE user_id = ? AND is_defeated = 0 
+    ORDER BY created_at DESC LIMIT 1
+  `).get(userId) as BossData | undefined;
+
+  return TITAN_BESTIARY.map((titan, index) => {
+    const timesDefeated = defeatedMap.get(titan.name) || 0;
+    const isCurrent = currentBoss?.boss_name === titan.name;
+    return {
+      ...titan,
+      tier: index + 1,
+      timesDefeated,
+      isCurrent,
+      currentHp: isCurrent ? currentBoss?.current_hp : titan.hp
+    };
+  });
+}
+
+export function selectBossTarget(userId: string, bossName: string): BossData {
+  const template = TITAN_BESTIARY.find(t => t.name.toLowerCase() === bossName.toLowerCase());
+  if (!template) throw new Error('Titan not found in the Bestiary');
+
+  db.prepare(`
+    DELETE FROM boss_raids WHERE user_id = ? AND is_defeated = 0
+  `).run(userId);
+
+  const bossId = crypto.randomUUID();
+  db.prepare(`
+    INSERT INTO boss_raids (id, user_id, boss_name, boss_title, current_hp, max_hp, is_defeated, reward_gold, reward_xp, created_at)
+    VALUES (?, ?, ?, ?, ?, ?, 0, ?, ?, ?)
+  `).run(
+    bossId,
+    userId,
+    template.name,
+    template.title,
+    template.hp,
+    template.hp,
+    template.gold,
+    template.xp,
+    new Date().toISOString()
+  );
+
+  return db.prepare('SELECT * FROM boss_raids WHERE id = ?').get(bossId) as BossData;
 }
 
 /**

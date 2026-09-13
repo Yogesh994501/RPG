@@ -1,4 +1,4 @@
-const API_BASE = import.meta.env.VITE_API_URL || 'http://localhost:5000/api';
+const API_BASE = import.meta.env.VITE_API_URL || (import.meta.env.PROD ? '/api' : 'http://localhost:5000/api');
 
 class ApiService {
   private token: string | null = null;
@@ -156,8 +156,30 @@ class ApiService {
     return this.request<any>('/boss');
   }
 
+  public async getTitanBestiary() {
+    return this.request<any>('/boss/bestiary');
+  }
+
+  public async selectBoss(bossName: string) {
+    return this.request<any>('/boss/select', {
+      method: 'POST',
+      body: JSON.stringify({ bossName })
+    });
+  }
+
   public async attackBoss() {
     return this.request<any>('/boss/attack', { method: 'POST' });
+  }
+
+  public async getGuildBounties() {
+    return this.request<any>('/quests/guild-bounties');
+  }
+
+  public async adoptGuildBounty(bountyId: string) {
+    return this.request<any>('/quests/adopt-bounty', {
+      method: 'POST',
+      body: JSON.stringify({ bountyId })
+    });
   }
 
   // Chronicle

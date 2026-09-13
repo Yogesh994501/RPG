@@ -190,13 +190,13 @@ export const QuestModal: React.FC<QuestModalProps> = ({
                   onClick={() => handleSelectCategory(tree.id as any)}
                   className={`p-2.5 rounded-xl border text-left transition ${
                     category === tree.id
-                      ? 'border-amber-400 bg-amber-500/15 shadow-sm'
-                      : 'border-slate-800 bg-slate-900/60 text-slate-400 hover:text-white'
+                      ? 'border-amber-400 bg-amber-950 text-amber-300 shadow-md ring-1 ring-amber-400'
+                      : 'border-slate-700 bg-slate-900 text-slate-200 hover:text-white hover:border-slate-500'
                   }`}
                 >
                   <div className="text-base mb-1">{tree.icon}</div>
                   <div className="text-xs font-bold text-white">{tree.name}</div>
-                  <div className="text-[10px] text-slate-400 leading-tight mt-0.5">{tree.desc.split(',')[0]}</div>
+                  <div className="text-[10px] text-slate-300 leading-tight mt-0.5">{tree.desc.split(',')[0]}</div>
                 </button>
               ))}
             </div>
@@ -213,12 +213,12 @@ export const QuestModal: React.FC<QuestModalProps> = ({
                   onClick={() => setDifficulty(diff)}
                   className={`p-2 rounded-lg border text-center transition ${
                     difficulty === diff
-                      ? 'border-amber-400 bg-amber-500/20 text-amber-300 font-bold'
-                      : 'border-slate-800 bg-slate-900 text-slate-400 hover:text-white'
+                      ? 'border-amber-400 bg-amber-950 text-amber-300 font-bold shadow-md ring-1 ring-amber-400'
+                      : 'border-slate-700 bg-slate-900 text-slate-200 hover:text-white hover:border-slate-500'
                   }`}
                 >
-                  <div className="text-xs">{diff}</div>
-                  <div className="text-[10px] text-slate-400">+{difficultyTiers[diff].xp} XP</div>
+                  <div className="text-xs font-semibold">{diff}</div>
+                  <div className="text-[10px] text-amber-400 font-mono">+{difficultyTiers[diff].xp} XP</div>
                 </button>
               ))}
             </div>
@@ -239,24 +239,24 @@ export const QuestModal: React.FC<QuestModalProps> = ({
                   onClick={() => setRecurrence(rec.id as any)}
                   className={`p-2 rounded-lg border text-center transition ${
                     recurrence === rec.id
-                      ? 'border-amber-400 bg-amber-500/20 text-amber-300 font-bold'
-                      : 'border-slate-800 bg-slate-900 text-slate-400 hover:text-white'
+                      ? 'border-amber-400 bg-amber-950 text-amber-300 font-bold shadow-md ring-1 ring-amber-400'
+                      : 'border-slate-700 bg-slate-900 text-slate-200 hover:text-white hover:border-slate-500'
                   }`}
                 >
-                  <div className="text-xs">{rec.label}</div>
-                  <div className="text-[10px] text-slate-500">{rec.desc}</div>
+                  <div className="text-xs font-semibold">{rec.label}</div>
+                  <div className="text-[10px] text-slate-300">{rec.desc}</div>
                 </button>
               ))}
             </div>
           </div>
 
           {/* Reward Summary Pill */}
-          <div className="p-3 rounded-xl bg-slate-950 border border-amber-500/30 flex items-center justify-between text-xs">
-            <span className="text-slate-400">Yield upon completion:</span>
+          <div className="p-3 rounded-xl bg-slate-950 border border-amber-500/50 flex items-center justify-between text-xs flex-wrap gap-2">
+            <span className="text-slate-200 font-semibold">Yield upon completion:</span>
             <div className="flex items-center gap-3">
               <span className="text-amber-400 font-bold font-mono">+{difficultyTiers[difficulty].xp} XP</span>
               <span className="text-yellow-400 font-bold font-mono">+{difficultyTiers[difficulty].gold} Gold</span>
-              <span className="text-purple-300 font-bold text-[11px] font-mono">+{attribute} Boost</span>
+              <span className="text-purple-300 font-bold text-xs font-mono">+{attribute} Boost</span>
             </div>
           </div>
 
