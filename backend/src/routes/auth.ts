@@ -11,15 +11,15 @@ const JWT_SECRET = process.env.JWT_SECRET || 'chronoslayer_divine_secret_key_cha
 
 function createDefaultQuests(userId: string) {
   const starterQuests = [
-    { title: 'Morning Hydration & Breathing', description: 'Drink 500ml water and complete 3 deep breaths.', attribute: 'VIT', difficulty: 'Trivial', quest_type: 'Daily' },
-    { title: 'Deep Work: Coding & Architecture', description: 'Spend 45 minutes focused on building your core project.', attribute: 'INT', difficulty: 'Hard', quest_type: 'Daily' },
-    { title: 'Physical Conditioning: 30-min Workout', description: 'Pushups, core routine, or gym session.', attribute: 'STR', difficulty: 'Medium', quest_type: 'Habit' },
-    { title: 'Tidy Workspace & Inbox Zero', description: 'Clear physical desk and organize pending tasks.', attribute: 'AGI', difficulty: 'Easy', quest_type: 'Habit' }
+    { title: 'Deep Study: 45m Focused Research & Learning', description: 'Immerse in single-task intellectual focus without tab hopping.', attribute: 'INT', category: 'mind', difficulty: 'Medium', quest_type: 'Daily', recurrence: 'daily' },
+    { title: 'Morning Mobility & 20m Physical Conditioning', description: 'Hydrate with water and complete morning bodyweight fitness.', attribute: 'VIT', category: 'body', difficulty: 'Easy', quest_type: 'Daily', recurrence: 'daily' },
+    { title: 'Build & Ship a LifeRPG Feature Component', description: 'Write clean code, document logic, and push an authoritative commit.', attribute: 'STR', category: 'craft', difficulty: 'Hard', quest_type: 'Daily', recurrence: 'daily' },
+    { title: 'Digital Sunset & Habit Reflection', description: 'Power down screens before sleep and review accomplishments in the Chronicle.', attribute: 'CHA', category: 'discipline', difficulty: 'Trivial', quest_type: 'Daily', recurrence: 'daily' }
   ];
 
   const insertQuest = db.prepare(`
-    INSERT INTO quests (id, user_id, title, description, attribute, difficulty, quest_type, due_date, is_completed, created_at)
-    VALUES (?, ?, ?, ?, ?, ?, ?, ?, 0, ?)
+    INSERT INTO quests (id, user_id, title, description, attribute, category, difficulty, quest_type, recurrence, is_completed, is_active, created_at)
+    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, 0, 1, ?)
   `);
 
   for (const q of starterQuests) {
@@ -29,9 +29,10 @@ function createDefaultQuests(userId: string) {
       q.title,
       q.description,
       q.attribute,
+      q.category,
       q.difficulty,
       q.quest_type,
-      null,
+      q.recurrence,
       new Date().toISOString()
     );
   }

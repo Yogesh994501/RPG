@@ -1,22 +1,27 @@
 @import url('https://fonts.googleapis.com/css2?family=Cinzel:wght@600;700;900&family=Outfit:wght@300;400;500;600;700&display=swap');
 
 :root {
-  --bg-deep: #07080C;
-  --bg-surface: #0B0E14;
-  --bg-card: #11141E;
-  --bg-card-hover: #171B28;
-  --bg-panel: rgba(11, 14, 20, 0.85);
+  --bg-deep: #090C15;
+  --bg-surface: #0E1322;
+  --bg-card: #141A2E;
+  --bg-card-hover: #1C243F;
+  --bg-panel: rgba(14, 19, 34, 0.90);
 
   --border-gold: #F59E0B;
   --border-gold-glow: rgba(245, 158, 11, 0.35);
   --border-subtle: rgba(255, 255, 255, 0.08);
 
   --color-gold: #FBBF24;
-  --color-mana: #8B5CF6;
-  --color-hp: #EF4444;
-  --color-stamina: #10B981;
-  --color-text-main: #F1F5F9;
-  --color-text-muted: #94A3B8;
+  --color-parchment: #F5EFE6;
+  --color-parchment-muted: #D8C8B8;
+  --color-ink: #8C7A6B;
+  --color-xp: #F97316;
+  --color-xp-glow: rgba(249, 115, 22, 0.4);
+
+  --tree-mind: #38BDF8;
+  --tree-body: #34D399;
+  --tree-craft: #A78BFA;
+  --tree-discipline: #FBBF24;
 
   --font-heading: 'Cinzel', serif;
   --font-body: 'Outfit', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
@@ -985,5 +990,61 @@ h1, h2, h3, h4, .font-rpg {
   object-position: top center !important;
   display: block;
 }
+
+/* Micro-Interaction: Anti-Cheat Shake Rejection */
+@keyframes shake-reject {
+  0%, 100% { transform: translateX(0); }
+  20%, 60% { transform: translateX(-8px); }
+  40%, 80% { transform: translateX(8px); }
+}
+
+.shake-reject {
+  animation: shake-reject 0.45s cubic-bezier(0.36, 0.07, 0.19, 0.97) both;
+}
+
+/* Micro-Interaction: Eased XP Progress Bar */
+.xp-fill-eased {
+  transition: width 0.7s cubic-bezier(0.34, 1.56, 0.64, 1), filter 0.3s ease;
+}
+
+/* Skill Tree Category Tags */
+.skill-tree-badge {
+  font-family: var(--font-body);
+  font-weight: 700;
+  font-size: 0.7rem;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  padding: 0.2rem 0.55rem;
+  border-radius: 9999px;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  border: 1px solid transparent;
+}
+
+.tree-mind {
+  background: rgba(56, 189, 248, 0.12);
+  border-color: rgba(56, 189, 248, 0.4);
+  color: var(--tree-mind);
+}
+
+.tree-body {
+  background: rgba(52, 211, 153, 0.12);
+  border-color: rgba(52, 211, 153, 0.4);
+  color: var(--tree-body);
+}
+
+.tree-craft {
+  background: rgba(167, 139, 250, 0.12);
+  border-color: rgba(167, 139, 250, 0.4);
+  color: var(--tree-craft);
+}
+
+.tree-discipline {
+  background: rgba(251, 191, 36, 0.12);
+  border-color: rgba(251, 191, 36, 0.4);
+  color: var(--tree-discipline);
+}
+
 
 

@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { X, Sparkles, Dumbbell, Brain, Heart, Zap, Scroll } from 'lucide-react';
+import { X, Sparkles, Dumbbell, Brain, Heart, Zap, Scroll, RefreshCw, Calendar, Flame } from 'lucide-react';
 import { Quest, AttributeType, DifficultyType, QuestType } from '../types';
 
 interface QuestModalProps {
@@ -8,9 +8,11 @@ interface QuestModalProps {
   onSubmit: (questData: {
     title: string;
     description: string;
+    category: 'mind' | 'body' | 'craft' | 'discipline';
     attribute: AttributeType;
     difficulty: DifficultyType;
     quest_type: QuestType;
+    recurrence: 'none' | 'daily' | 'weekly';
     due_date?: string | null;
   }) => Promise<void>;
   editingQuest: Quest | null;
@@ -24,27 +26,47 @@ export const QuestModal: React.FC<QuestModalProps> = ({
 }) => {
   const [title, setTitle] = useState('');
   const [description, setDescription] = useState('');
+  const [category, setCategory] = useState<'mind' | 'body' | 'craft' | 'discipline'>('mind');
   const [attribute, setAttribute] = useState<AttributeType>('INT');
   const [difficulty, setDifficulty] = useState<DifficultyType>('Medium');
-  const [questType, setQuestType] = useState<QuestType>('Daily');
+  const [recurrence, setRecurrence] = useState<'none' | 'daily' | 'weekly'>('daily');
   const [dueDate, setDueDate] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState('');
+
+  const skillTrees = [
+    { id: 'mind', name: 'Mind', icon: '🧠', attr: 'INT' as AttributeType, desc: 'Studies, reading, focus, coding algorithms' },
+    { id: 'body', name: 'Body', icon: '🏃', attr: 'VIT' as AttributeType, desc: 'Workouts, fitness, hydration, wellness' },
+    { id: 'craft', name: 'Craft', icon: '⚒️', attr: 'STR' as AttributeType, desc: 'Project shipping, art, writing, building' },
+    { id: 'discipline', name: 'Discipline', icon: '⚖️', attr: 'CHA' as AttributeType, desc: 'Habits, routines, meditation, cleanliness' }
+  ];
+
+  const difficultyTiers: Record<DifficultyType, { xp: number; gold: number; label: string }> = {
+    Trivial: { xp: 15, gold: 5, label: 'Trivial (+15 XP, +5 Gold)' },
+    Easy: { xp: 30, gold: 10, label: 'Easy (+30 XP, +10 Gold)' },
+    Medium: { xp: 60, gold: 20, label: 'Medium (+60 XP, +20 Gold)' },
+    Hard: { xp: 120, gold: 45, label: 'Hard (+120 XP, +45 Gold)' },
+    Legendary: { xp: 250, gold: 100, label: 'Legendary (+250 XP, +100 Gold)' }
+  };
 
   useEffect(() => {
     if (editingQuest) {
       setTitle(editingQuest.title);
       setDescription(editingQuest.description || '');
-      setAttribute(editingQuest.attribute);
+      const cat = (editingQuest.category || 'mind') as 'mind' | 'body' | 'craft' | 'discipline';
+      setCategory(cat);
+      setAttribute(editingQuest.attribute || 'INT');
       setDifficulty(editingQuest.difficulty);
-      setQuestType(editingQuest.quest_type);
+      const rec = (editingQuest.recurrence || 'daily') as 'none' | 'daily' | 'weekly';
+      setRecurrence(rec);
       setDueDate(editingQuest.due_date || '');
     } else {
       setTitle('');
       setDescription('');
+      setCategory('mind');
       setAttribute('INT');
       setDifficulty('Medium');
-      setQuestType('Daily');
+      setRecurrence('daily');
       setDueDate('');
     }
     setError('');
@@ -63,6 +85,14 @@ export const QuestModal: React.FC<QuestModalProps> = ({
 
   if (!isOpen) return null;
 
+  const handleSelectCategory = (cat: 'mind' | 'body' | 'craft' | 'discipline') => {
+    setCategory(cat);
+    const tree = skillTrees.find(t => t.id === cat);
+    if (tree) {
+      setAttribute(tree.attr);
+    }
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!title.trim()) {
@@ -76,39 +106,25 @@ export const QuestModal: React.FC<QuestModalProps> = ({
       await onSubmit({
         title: title.trim(),
         description: description.trim(),
+        category,
         attribute,
         difficulty,
-        quest_type: questType,
+        quest_type: recurrence === 'none' ? 'Milestone' : 'Daily',
+        recurrence,
         due_date: dueDate || null
       });
       onClose();
     } catch (err: any) {
-      setError(err.message || 'Failed to save quest');
+      setError(err.message || 'The Guild was unable to register your deed.');
     } finally {
       setIsSubmitting(false);
     }
   };
 
-  const attributeDescriptions: Record<AttributeType, { name: string; desc: string }> = {
-    STR: { name: 'Strength', desc: 'Fitness, gym, body conditioning' },
-    INT: { name: 'Intellect', desc: 'Coding, studying, reading, deep work' },
-    VIT: { name: 'Vitality', desc: 'Sleep, nutrition, hydration, wellness' },
-    AGI: { name: 'Agility', desc: 'Errands, swift chores, inbox zero' },
-    CHA: { name: 'Charisma', desc: 'Networking, communication, leadership' }
-  };
-
-  const difficultyRewards: Record<DifficultyType, { xp: number; gold: number }> = {
-    Trivial: { xp: 15, gold: 8 },
-    Easy: { xp: 30, gold: 18 },
-    Medium: { xp: 65, gold: 38 },
-    Hard: { xp: 130, gold: 80 },
-    Legendary: { xp: 320, gold: 200 }
-  };
-
   return (
     <div className="modal-overlay" onClick={onClose}>
       <div 
-        className="modal-content max-h-[88vh] overflow-y-auto" 
+        className="modal-content max-h-[90vh] overflow-y-auto" 
         onClick={(e) => e.stopPropagation()}
       >
         {/* Modal Header */}
@@ -116,7 +132,7 @@ export const QuestModal: React.FC<QuestModalProps> = ({
           <div className="flex items-center gap-2">
             <Scroll className="text-amber-400" size={20} />
             <h2 className="font-rpg text-lg font-bold text-white">
-              {editingQuest ? 'Revise Ancient Deed' : 'Summon New Quest'}
+              {editingQuest ? 'Revise Guild Deed' : 'Summon New Quest'}
             </h2>
           </div>
           <button onClick={onClose} className="icon-btn w-8 h-8" aria-label="Close modal">
@@ -140,7 +156,7 @@ export const QuestModal: React.FC<QuestModalProps> = ({
               id="quest-title"
               type="text"
               required
-              placeholder="e.g. Conquer 45-Min LeetCode Grind"
+              placeholder="e.g. 45m Focused Research or Coding Grind"
               value={title}
               onChange={(e) => setTitle(e.target.value)}
               className="form-input"
@@ -151,114 +167,119 @@ export const QuestModal: React.FC<QuestModalProps> = ({
           {/* Description */}
           <div className="form-group">
             <label className="form-label" htmlFor="quest-desc">
-              Scroll of Details (Optional)
+              Parchment of Objectives (Optional)
             </label>
             <textarea
               id="quest-desc"
               rows={2}
-              placeholder="Brief tactical notes or objectives..."
+              placeholder="Key notes, learning checklist, or constraints..."
               value={description}
               onChange={(e) => setDescription(e.target.value)}
               className="form-input resize-none"
             />
           </div>
 
-          {/* Attribute Selection */}
+          {/* Skill Tree Selection */}
           <div className="form-group">
-            <label className="form-label">Trained Hero Attribute</label>
-            <div className="grid grid-cols-5 gap-1.5">
-              {(['STR', 'INT', 'VIT', 'AGI', 'CHA'] as AttributeType[]).map((attr) => (
+            <label className="form-label">Skill Tree Domain</label>
+            <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
+              {skillTrees.map((tree) => (
                 <button
                   type="button"
-                  key={attr}
-                  onClick={() => setAttribute(attr)}
-                  className={`p-2 rounded border text-center transition ${
-                    attribute === attr
-                      ? 'bg-amber-400 text-slate-950 border-amber-400 font-bold shadow-md'
-                      : 'bg-slate-900 text-slate-400 border-slate-800 hover:text-white'
+                  key={tree.id}
+                  onClick={() => handleSelectCategory(tree.id as any)}
+                  className={`p-2.5 rounded-xl border text-left transition ${
+                    category === tree.id
+                      ? 'border-amber-400 bg-amber-500/15 shadow-sm'
+                      : 'border-slate-800 bg-slate-900/60 text-slate-400 hover:text-white'
                   }`}
                 >
-                  <div className="text-xs font-bold">{attr}</div>
-                  <div className="text-[10px] opacity-75 capitalize">{attributeDescriptions[attr].name.slice(0, 4)}</div>
+                  <div className="text-base mb-1">{tree.icon}</div>
+                  <div className="text-xs font-bold text-white">{tree.name}</div>
+                  <div className="text-[10px] text-slate-400 leading-tight mt-0.5">{tree.desc.split(',')[0]}</div>
                 </button>
               ))}
             </div>
-            <p className="text-[11px] text-slate-400 mt-1.5 italic">
-              {attributeDescriptions[attribute].desc}
-            </p>
           </div>
 
-          {/* Difficulty Selection */}
+          {/* Difficulty Tier */}
           <div className="form-group">
-            <div className="flex items-center justify-between mb-1">
-              <label className="form-label mb-0">Difficulty & Yield</label>
-              <span className="text-[11px] font-mono text-amber-300">
-                +{difficultyRewards[difficulty].xp} XP / +{difficultyRewards[difficulty].gold} Gold
-              </span>
-            </div>
-            <div className="grid grid-cols-5 gap-1.5">
+            <label className="form-label">Difficulty Tier</label>
+            <div className="grid grid-cols-2 sm:grid-cols-5 gap-1.5">
               {(['Trivial', 'Easy', 'Medium', 'Hard', 'Legendary'] as DifficultyType[]).map((diff) => (
                 <button
                   type="button"
                   key={diff}
                   onClick={() => setDifficulty(diff)}
-                  className={`py-1.5 px-1 rounded text-[11px] font-semibold border transition ${
+                  className={`p-2 rounded-lg border text-center transition ${
                     difficulty === diff
-                      ? 'bg-slate-800 border-amber-400 text-amber-300 shadow-sm'
-                      : 'bg-slate-900 border-slate-800 text-slate-400 hover:text-white'
+                      ? 'border-amber-400 bg-amber-500/20 text-amber-300 font-bold'
+                      : 'border-slate-800 bg-slate-900 text-slate-400 hover:text-white'
                   }`}
                 >
-                  {diff}
+                  <div className="text-xs">{diff}</div>
+                  <div className="text-[10px] text-slate-400">+{difficultyTiers[diff].xp} XP</div>
                 </button>
               ))}
             </div>
           </div>
 
-          {/* Quest Type & Due Date */}
-          <div className="grid grid-cols-2 gap-3">
-            <div className="form-group">
-              <label className="form-label" htmlFor="quest-type">Quest Frequency</label>
-              <select
-                id="quest-type"
-                value={questType}
-                onChange={(e) => setQuestType(e.target.value as QuestType)}
-                className="form-input text-xs"
-              >
-                <option value="Daily">Daily Ritual</option>
-                <option value="Habit">Repeatable Habit</option>
-                <option value="Milestone">Epic Milestone</option>
-              </select>
-            </div>
-
-            <div className="form-group">
-              <label className="form-label" htmlFor="quest-due">Due Date (Optional)</label>
-              <input
-                id="quest-due"
-                type="date"
-                value={dueDate}
-                onChange={(e) => setDueDate(e.target.value)}
-                className="form-input text-xs"
-              />
+          {/* Recurrence Period */}
+          <div className="form-group">
+            <label className="form-label">Recurrence Cadence</label>
+            <div className="grid grid-cols-3 gap-2">
+              {[
+                { id: 'daily', label: '🔄 Daily', desc: 'Resets each day' },
+                { id: 'weekly', label: '📅 Weekly', desc: 'Once per week' },
+                { id: 'none', label: '🎯 One-Time', desc: 'Milestone deed' }
+              ].map((rec) => (
+                <button
+                  type="button"
+                  key={rec.id}
+                  onClick={() => setRecurrence(rec.id as any)}
+                  className={`p-2 rounded-lg border text-center transition ${
+                    recurrence === rec.id
+                      ? 'border-amber-400 bg-amber-500/20 text-amber-300 font-bold'
+                      : 'border-slate-800 bg-slate-900 text-slate-400 hover:text-white'
+                  }`}
+                >
+                  <div className="text-xs">{rec.label}</div>
+                  <div className="text-[10px] text-slate-500">{rec.desc}</div>
+                </button>
+              ))}
             </div>
           </div>
 
-          {/* Action Buttons */}
-          <div className="flex items-center justify-end gap-2 pt-2 border-t border-slate-800">
+          {/* Reward Summary Pill */}
+          <div className="p-3 rounded-xl bg-slate-950 border border-amber-500/30 flex items-center justify-between text-xs">
+            <span className="text-slate-400">Yield upon completion:</span>
+            <div className="flex items-center gap-3">
+              <span className="text-amber-400 font-bold font-mono">+{difficultyTiers[difficulty].xp} XP</span>
+              <span className="text-yellow-400 font-bold font-mono">+{difficultyTiers[difficulty].gold} Gold</span>
+              <span className="text-purple-300 font-bold text-[11px] font-mono">+{attribute} Boost</span>
+            </div>
+          </div>
+
+          {/* Actions */}
+          <div className="flex items-center justify-end gap-2.5 pt-3 border-t border-slate-800">
             <button
               type="button"
               onClick={onClose}
-              disabled={isSubmitting}
               className="rpg-btn rpg-btn-secondary text-xs"
+              disabled={isSubmitting}
             >
               Cancel
             </button>
             <button
               type="submit"
+              className="rpg-btn rpg-btn-gold text-xs min-w-[120px]"
               disabled={isSubmitting}
-              className="rpg-btn rpg-btn-gold text-xs"
             >
-              <Sparkles size={14} />
-              <span>{isSubmitting ? 'Inscribing...' : editingQuest ? 'Save Changes' : 'Seal & Dispatch'}</span>
+              {isSubmitting ? (
+                <span>Registering...</span>
+              ) : (
+                <span>{editingQuest ? 'Save Deed' : 'Inscribe Quest'}</span>
+              )}
             </button>
           </div>
         </form>

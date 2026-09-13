@@ -110,10 +110,13 @@ class ApiService {
   public async createQuest(payload: {
     title: string;
     description?: string;
-    attribute: string;
+    category?: string;
+    attribute?: string;
     difficulty: string;
-    quest_type: string;
+    recurrence?: string;
+    quest_type?: string;
     due_date?: string | null;
+    tags?: string[];
   }) {
     return this.request<any>('/quests', {
       method: 'POST',

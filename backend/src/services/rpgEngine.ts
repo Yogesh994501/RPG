@@ -19,16 +19,21 @@ export interface CharacterData {
 }
 
 export interface QuestRewardResult {
-  xpEarned: number;
-  goldEarned: number;
+  xpGained: number;
+  goldGained: number;
   attributeGained: string;
   attributeBonus: number;
   leveledUp: boolean;
   newLevel: number;
-  streakUpdated: boolean;
+  streakChanged: boolean;
   currentStreak: number;
   streakMultiplier: number;
   character: CharacterData;
+  quest?: any;
+  // Backwards compatibility
+  xpEarned: number;
+  goldEarned: number;
+  streakUpdated: boolean;
 }
 
 /**
@@ -64,22 +69,23 @@ export function getYesterdayDateString(timezone: string = 'UTC'): string {
 }
 
 /**
- * Calculates difficulty rewards
+ * Calculates difficulty rewards matching server-side specification
  */
 export function getDifficultyBaseRewards(difficulty: string): { xp: number; gold: number; statGain: number } {
-  switch (difficulty) {
-    case 'Trivial':
-      return { xp: 15, gold: 8, statGain: 1 };
-    case 'Easy':
-      return { xp: 30, gold: 18, statGain: 1 };
-    case 'Medium':
-      return { xp: 65, gold: 38, statGain: 2 };
-    case 'Hard':
-      return { xp: 130, gold: 80, statGain: 3 };
-    case 'Legendary':
-      return { xp: 320, gold: 200, statGain: 5 };
+  const norm = (difficulty || 'medium').toLowerCase();
+  switch (norm) {
+    case 'trivial':
+      return { xp: 15, gold: 5, statGain: 1 };
+    case 'easy':
+      return { xp: 30, gold: 10, statGain: 1 };
+    case 'medium':
+      return { xp: 60, gold: 20, statGain: 2 };
+    case 'hard':
+      return { xp: 120, gold: 45, statGain: 3 };
+    case 'legendary':
+      return { xp: 250, gold: 100, statGain: 5 };
     default:
-      return { xp: 30, gold: 15, statGain: 1 };
+      return { xp: 30, gold: 10, statGain: 1 };
   }
 }
 
@@ -97,8 +103,36 @@ export function processQuestCompletion(
     if (!quest) {
       throw new Error('Quest not found');
     }
-    if (quest.is_completed) {
-      throw new Error('Quest is already completed');
+
+    const today = getLocalDateString(userTimezone);
+    const recurrence = (quest.recurrence || (quest.quest_type === 'Daily' ? 'daily' : quest.quest_type === 'Habit' ? 'daily' : 'none')).toLowerCase();
+
+    // Anti-Cheat Recurrence Validation: check QuestLog for an existing completion this period
+    if (recurrence === 'daily') {
+      const existingLog = db.prepare(`
+        SELECT id, completed_at FROM quest_logs 
+        WHERE user_id = ? AND quest_id = ? AND completed_at >= ?
+        ORDER BY completed_at DESC LIMIT 1
+      `).get(userId, questId, today) as any;
+
+      if (existingLog || quest.is_completed) {
+        throw new Error('Quest already fulfilled today. Resets tomorrow.');
+      }
+    } else if (recurrence === 'weekly') {
+      const sevenDaysAgo = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString();
+      const existingLog = db.prepare(`
+        SELECT id, completed_at FROM quest_logs 
+        WHERE user_id = ? AND quest_id = ? AND completed_at >= ?
+        ORDER BY completed_at DESC LIMIT 1
+      `).get(userId, questId, sevenDaysAgo) as any;
+
+      if (existingLog || quest.is_completed) {
+        throw new Error('Weekly quest already fulfilled for this period.');
+      }
+    } else {
+      if (quest.is_completed) {
+        throw new Error('One-time quest has already been fulfilled.');
+      }
     }
 
     // 2. Fetch current character
@@ -123,7 +157,6 @@ export function processQuestCompletion(
     }
 
     // 4. Calculate Timezone-aware streak
-    const today = getLocalDateString(userTimezone);
     const yesterday = getYesterdayDateString(userTimezone);
     let newStreak = char.current_streak;
     let streakUpdated = false;
@@ -245,17 +278,24 @@ export function processQuestCompletion(
     updatedChar.xp_progress_percent = xpProgressPercent;
     updatedChar.streak_multiplier = streakMultiplier;
 
+    const updatedQuest = db.prepare('SELECT * FROM quests WHERE id = ?').get(questId) as any;
+
     return {
-      xpEarned,
-      goldEarned,
-      attributeGained: quest.attribute,
+      xpGained: xpEarned,
+      goldGained: goldEarned,
+      attributeGained: quest.category || quest.attribute,
       attributeBonus,
       leveledUp,
       newLevel: currentLevel,
-      streakUpdated,
+      streakChanged: streakUpdated,
       currentStreak: newStreak,
       streakMultiplier,
-      character: updatedChar
+      character: updatedChar,
+      quest: updatedQuest,
+      // Backwards compatibility
+      xpEarned,
+      goldEarned,
+      streakUpdated
     };
   });
 

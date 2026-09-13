@@ -8,8 +8,36 @@ import { executeBossAttack, getOrCreateBoss } from '../services/bossEngine.js';
 const router = Router();
 
 const VALID_ATTRIBUTES = ['STR', 'INT', 'VIT', 'AGI', 'CHA'];
-const VALID_DIFFICULTIES = ['Trivial', 'Easy', 'Medium', 'Hard', 'Legendary'];
+const VALID_CATEGORIES = ['mind', 'body', 'craft', 'discipline'];
+const VALID_DIFFICULTIES = ['Trivial', 'Easy', 'Medium', 'Hard', 'Legendary', 'trivial', 'easy', 'medium', 'hard', 'legendary'];
 const VALID_TYPES = ['Daily', 'Habit', 'Milestone'];
+const VALID_RECURRENCES = ['none', 'daily', 'weekly'];
+
+// In-Memory Rate Limiter for Script Prevention
+const userRateLimits = new Map<string, { count: number; lastReset: number }>();
+function isRateLimited(userId: string): boolean {
+  const now = Date.now();
+  const entry = userRateLimits.get(userId) || { count: 0, lastReset: now };
+  if (now - entry.lastReset > 10000) {
+    entry.count = 1;
+    entry.lastReset = now;
+  } else {
+    entry.count++;
+  }
+  userRateLimits.set(userId, entry);
+  return entry.count > 25; // max 25 actions per 10s
+}
+
+// Map skill tree categories to attributes
+function mapCategoryToAttribute(cat: string): string {
+  switch (cat.toLowerCase()) {
+    case 'mind': return 'INT';
+    case 'body': return 'VIT';
+    case 'craft': return 'STR';
+    case 'discipline': return 'CHA';
+    default: return 'INT';
+  }
+}
 
 // GET /api/quests
 router.get('/', authGuard, (req: AuthRequest, res: Response): void => {
@@ -58,42 +86,37 @@ router.get('/', authGuard, (req: AuthRequest, res: Response): void => {
 router.post('/', authGuard, (req: AuthRequest, res: Response): void => {
   try {
     const userId = req.user!.id;
-    const { title, description = '', attribute = 'INT', difficulty = 'Medium', quest_type = 'Daily', due_date = null } = req.body;
+    if (isRateLimited(userId)) {
+      res.status(429).json({ error: 'Too many quests created recently. Please slow down.' });
+      return;
+    }
+    const { title, description = '', category = 'mind', attribute, difficulty = 'Medium', quest_type = 'Daily', recurrence = 'daily', due_date = null } = req.body;
 
     if (!title || typeof title !== 'string' || title.trim().length === 0) {
       res.status(400).json({ error: 'Quest title is required and cannot be empty' });
       return;
     }
 
-    if (!VALID_ATTRIBUTES.includes(attribute)) {
-      res.status(400).json({ error: `Invalid attribute. Must be one of: ${VALID_ATTRIBUTES.join(', ')}` });
-      return;
-    }
-
-    if (!VALID_DIFFICULTIES.includes(difficulty)) {
-      res.status(400).json({ error: `Invalid difficulty. Must be one of: ${VALID_DIFFICULTIES.join(', ')}` });
-      return;
-    }
-
-    if (!VALID_TYPES.includes(quest_type)) {
-      res.status(400).json({ error: `Invalid quest type. Must be one of: ${VALID_TYPES.join(', ')}` });
-      return;
-    }
+    const assignedCategory = VALID_CATEGORIES.includes(category?.toLowerCase()) ? category.toLowerCase() : 'mind';
+    const assignedAttribute = attribute && VALID_ATTRIBUTES.includes(attribute) ? attribute : mapCategoryToAttribute(assignedCategory);
+    const assignedRecurrence = VALID_RECURRENCES.includes(recurrence?.toLowerCase()) ? recurrence.toLowerCase() : (quest_type === 'Habit' || quest_type === 'Daily' ? 'daily' : 'none');
 
     const questId = crypto.randomUUID();
     const createdAt = new Date().toISOString();
 
     db.prepare(`
-      INSERT INTO quests (id, user_id, title, description, attribute, difficulty, quest_type, due_date, is_completed, created_at)
-      VALUES (?, ?, ?, ?, ?, ?, ?, ?, 0, ?)
+      INSERT INTO quests (id, user_id, title, description, attribute, category, difficulty, quest_type, recurrence, is_active, due_date, is_completed, created_at)
+      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, 1, ?, 0, ?)
     `).run(
       questId,
       userId,
       title.trim(),
       description.trim(),
-      attribute,
+      assignedAttribute,
+      assignedCategory,
       difficulty,
       quest_type,
+      assignedRecurrence,
       due_date || null,
       createdAt
     );
@@ -201,10 +224,15 @@ router.delete('/:id', authGuard, (req: AuthRequest, res: Response): void => {
 router.post('/:id/complete', authGuard, (req: AuthRequest, res: Response): void => {
   try {
     const userId = req.user!.id;
-    const questId = req.params.id;
-    const userTimezone = req.user!.timezone || 'UTC';
+    if (isRateLimited(userId)) {
+      res.status(429).json({ error: 'Too many actions recorded. Take a breath, adventurer.' });
+      return;
+    }
+    const rawId = req.params.id;
+    const questId = Array.isArray(rawId) ? rawId[0] : rawId;
+    const userTimezone: string = typeof req.user?.timezone === 'string' ? req.user.timezone : 'UTC';
 
-    // 1. Process XP, Gold, Streaks, Stat Gains & Ledger Transaction
+    // 1. Process XP, Gold, Streaks, Stat Gains & Ledger Transaction (Single DB Transaction)
     const rewardResult = processQuestCompletion(userId, questId, userTimezone);
 
     // 2. Tying Quest Accomplishment directly to Boss Damage (STR + INT + AGI combat integration)
@@ -212,11 +240,24 @@ router.post('/:id/complete', authGuard, (req: AuthRequest, res: Response): void 
 
     res.json({
       success: true,
+      delta: {
+        xpGained: rewardResult.xpGained,
+        goldGained: rewardResult.goldGained,
+        leveledUp: rewardResult.leveledUp,
+        newLevel: rewardResult.newLevel,
+        streakChanged: rewardResult.streakChanged,
+        currentStreak: rewardResult.currentStreak
+      },
       reward: rewardResult,
       bossCombat: bossAttackResult
     });
   } catch (err: any) {
-    res.status(400).json({ error: err.message });
+    const message = err.message || 'Failed to complete quest';
+    if (message.includes('already fulfilled') || message.includes('already completed')) {
+      res.status(400).json({ error: message, code: 'ALREADY_COMPLETED' });
+      return;
+    }
+    res.status(500).json({ error: message });
   }
 });
 

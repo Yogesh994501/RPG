@@ -34,17 +34,28 @@ export const QuestBoard: React.FC<QuestBoardProps> = ({
   onDeleteQuest
 }) => {
   const [selectedType, setSelectedType] = useState<string>('All');
-  const [selectedAttr, setSelectedAttr] = useState<string>('All');
+  const [selectedCategory, setSelectedCategory] = useState<string>('All');
   const [searchQuery, setSearchQuery] = useState<string>('');
   const [showCompleted, setShowCompleted] = useState<boolean>(false);
 
-  const getAttributeIcon = (attr: AttributeType) => {
-    switch (attr) {
-      case 'STR': return <Dumbbell size={13} className="text-amber-400" />;
-      case 'INT': return <Brain size={13} className="text-purple-400" />;
-      case 'VIT': return <Heart size={13} className="text-red-400" />;
-      case 'AGI': return <Zap size={13} className="text-emerald-400" />;
-      case 'CHA': return <Sparkles size={13} className="text-pink-400" />;
+  const getCategoryBadge = (cat?: string) => {
+    switch (cat?.toLowerCase()) {
+      case 'mind': return <span className="skill-tree-badge tree-mind">🧠 Mind</span>;
+      case 'body': return <span className="skill-tree-badge tree-body">🏃 Body</span>;
+      case 'craft': return <span className="skill-tree-badge tree-craft">⚒️ Craft</span>;
+      case 'discipline': return <span className="skill-tree-badge tree-discipline">⚖️ Discipline</span>;
+      default: return <span className="skill-tree-badge tree-mind">🧠 Mind</span>;
+    }
+  };
+
+  const getDifficultyReward = (diff: string) => {
+    switch (diff?.toLowerCase()) {
+      case 'trivial': return { xp: 15, gold: 5 };
+      case 'easy': return { xp: 30, gold: 10 };
+      case 'medium': return { xp: 60, gold: 20 };
+      case 'hard': return { xp: 120, gold: 45 };
+      case 'legendary': return { xp: 250, gold: 100 };
+      default: return { xp: 60, gold: 20 };
     }
   };
 
@@ -62,7 +73,7 @@ export const QuestBoard: React.FC<QuestBoardProps> = ({
     if (!showCompleted && q.is_completed) return false;
     if (showCompleted && !q.is_completed) return false;
     if (selectedType !== 'All' && q.quest_type !== selectedType) return false;
-    if (selectedAttr !== 'All' && q.attribute !== selectedAttr) return false;
+    if (selectedCategory !== 'All' && (q.category || 'mind').toLowerCase() !== selectedCategory.toLowerCase()) return false;
     if (searchQuery.trim() !== '') {
       const matchTitle = q.title.toLowerCase().includes(searchQuery.toLowerCase());
       const matchDesc = q.description.toLowerCase().includes(searchQuery.toLowerCase());
@@ -136,22 +147,28 @@ export const QuestBoard: React.FC<QuestBoardProps> = ({
           </div>
         </div>
 
-        {/* Attribute Pills Filter */}
+        {/* Skill Tree Filter */}
         <div className="flex items-center gap-1.5 flex-wrap text-xs">
           <span className="text-slate-500 text-[11px] font-semibold flex items-center gap-1 mr-1">
-            <Filter size={12} /> Attribute:
+            <Filter size={12} /> Skill Tree:
           </span>
-          {['All', 'STR', 'INT', 'VIT', 'AGI', 'CHA'].map((attr) => (
+          {[
+            { id: 'All', label: 'All Trees' },
+            { id: 'mind', label: '🧠 Mind' },
+            { id: 'body', label: '🏃 Body' },
+            { id: 'craft', label: '⚒️ Craft' },
+            { id: 'discipline', label: '⚖️ Discipline' }
+          ].map((tree) => (
             <button
-              key={attr}
-              onClick={() => setSelectedAttr(attr)}
-              className={`px-2 py-0.5 rounded text-[11px] font-semibold transition ${
-                selectedAttr === attr
+              key={tree.id}
+              onClick={() => setSelectedCategory(tree.id)}
+              className={`px-2.5 py-1 rounded-lg text-[11px] font-bold transition ${
+                selectedCategory === tree.id
                   ? 'bg-amber-400 text-slate-950 shadow-sm'
                   : 'bg-slate-900 text-slate-400 hover:text-white border border-slate-800'
               }`}
             >
-              {attr}
+              {tree.label}
             </button>
           ))}
         </div>
@@ -178,57 +195,65 @@ export const QuestBoard: React.FC<QuestBoardProps> = ({
             )}
           </div>
         ) : (
-          filteredQuests.map((quest) => (
-            <div
-              key={quest.id}
-              className={`quest-card ${quest.is_completed ? 'quest-card-completed' : ''}`}
-            >
-              {/* Checkmark Completion Button */}
-              <button
-                onClick={(e) => handleCheckClick(e, quest)}
-                disabled={Boolean(quest.is_completed)}
-                className={`quest-check ${quest.is_completed ? 'quest-check-done' : ''}`}
-                title={quest.is_completed ? 'Deed Completed' : 'Complete Quest & Claim Rewards'}
-                aria-label={`Mark quest "${quest.title}" as complete`}
+          filteredQuests.map((quest) => {
+            const reward = getDifficultyReward(quest.difficulty);
+            return (
+              <div
+                key={quest.id}
+                id={`quest-card-${quest.id}`}
+                className={`quest-card ${quest.is_completed ? 'quest-card-completed' : ''}`}
               >
-                {quest.is_completed && <Check size={16} strokeWidth={3} />}
-              </button>
+                {/* Checkmark Completion Button */}
+                <button
+                  onClick={(e) => handleCheckClick(e, quest)}
+                  disabled={Boolean(quest.is_completed)}
+                  className={`quest-check ${quest.is_completed ? 'quest-check-done' : ''}`}
+                  title={quest.is_completed ? 'Deed Completed' : 'Complete Quest & Claim Rewards'}
+                  aria-label={`Mark quest "${quest.title}" as complete`}
+                >
+                  {quest.is_completed && <Check size={16} strokeWidth={3} />}
+                </button>
 
-              {/* Quest Details */}
-              <div className="flex-1 min-w-0">
-                <h3 className="quest-title">{quest.title}</h3>
-                {quest.description && (
-                  <p className="quest-desc">{quest.description}</p>
-                )}
-
-                <div className="quest-meta">
-                  {/* Attribute Badge */}
-                  <span className="badge-tag bg-slate-900 border border-slate-800 flex items-center gap-1">
-                    {getAttributeIcon(quest.attribute)}
-                    <span className="text-slate-300">{quest.attribute}</span>
-                  </span>
-
-                  {/* Difficulty Tag */}
-                  <span className={`badge-tag bg-slate-900/80 border border-slate-800 font-bold ${getDifficultyClass(quest.difficulty)}`}>
-                    {quest.difficulty}
-                  </span>
-
-                  {/* Type Tag */}
-                  <span className="badge-tag bg-slate-900/60 text-slate-400 border border-slate-800/80">
-                    {quest.quest_type}
-                  </span>
-
-                  {/* Due Date if any */}
-                  {quest.due_date && (
-                    <span className="badge-tag bg-slate-900/60 text-slate-400 border border-slate-800/80 flex items-center gap-1">
-                      <Calendar size={11} />
-                      <span>{quest.due_date}</span>
-                    </span>
+                {/* Quest Details */}
+                <div className="flex-1 min-w-0">
+                  <h3 className="quest-title">{quest.title}</h3>
+                  {quest.description && (
+                    <p className="quest-desc">{quest.description}</p>
                   )}
-                </div>
-              </div>
 
-              {/* Edit / Delete Buttons */}
+                  <div className="quest-meta flex-wrap gap-2 items-center">
+                    {/* Skill Tree Badge */}
+                    {getCategoryBadge(quest.category)}
+
+                    {/* Difficulty Tag */}
+                    <span className={`badge-tag bg-slate-900/80 border border-slate-800 font-bold ${getDifficultyClass(quest.difficulty)}`}>
+                      {quest.difficulty}
+                    </span>
+
+                    {/* Recurrence Tag */}
+                    <span className="badge-tag bg-slate-900/60 text-slate-400 border border-slate-800/80">
+                      {quest.recurrence || quest.quest_type}
+                    </span>
+
+                    {/* XP & Gold Reward Preview */}
+                    <span className="badge-tag bg-amber-500/10 border border-amber-500/30 text-amber-300 font-bold">
+                      +{reward.xp} XP
+                    </span>
+                    <span className="badge-tag bg-yellow-500/10 border border-yellow-500/30 text-yellow-300 font-bold">
+                      +{reward.gold} Gold
+                    </span>
+
+                    {/* Due Date if any */}
+                    {quest.due_date && (
+                      <span className="badge-tag bg-slate-900/60 text-slate-400 border border-slate-800/80 flex items-center gap-1">
+                        <Calendar size={11} />
+                        <span>{quest.due_date}</span>
+                      </span>
+                    )}
+                  </div>
+                </div>
+
+                {/* Edit / Delete Buttons */}
               <div className="flex items-center gap-1">
                 {!quest.is_completed && (
                   <button
@@ -250,7 +275,8 @@ export const QuestBoard: React.FC<QuestBoardProps> = ({
                 </button>
               </div>
             </div>
-          ))
+          );
+          })
         )}
       </div>
     </section>

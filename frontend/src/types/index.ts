@@ -38,6 +38,8 @@ export interface Quest {
   user_id: string;
   title: string;
   description: string;
+  category?: 'mind' | 'body' | 'craft' | 'discipline' | string;
+  recurrence?: 'none' | 'daily' | 'weekly' | string;
   attribute: AttributeType;
   difficulty: DifficultyType;
   quest_type: QuestType;

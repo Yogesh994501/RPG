@@ -337,6 +337,34 @@ class SoundEngine {
       osc.stop(t + idx * 0.07 + 0.38);
     });
   }
+
+  // 11. Reject / Error Sound (Dull low buzz)
+  public playReject() {
+    if (this.isMuted) return;
+    const ctx = this.getContext();
+    if (!ctx) return;
+
+    const t = ctx.currentTime;
+    const osc = ctx.createOscillator();
+    const gain = ctx.createGain();
+
+    osc.type = 'sawtooth';
+    osc.frequency.setValueAtTime(140, t);
+    osc.frequency.linearRampToValueAtTime(80, t + 0.15);
+
+    gain.gain.setValueAtTime(this.volume * 0.22, t);
+    gain.gain.exponentialRampToValueAtTime(0.001, t + 0.16);
+
+    osc.connect(gain);
+    gain.connect(ctx.destination);
+
+    osc.start(t);
+    osc.stop(t + 0.18);
+  }
+
+  public playQuestAbandon() {
+    this.playReject();
+  }
 }
 
 export const soundEngine = new SoundEngine();

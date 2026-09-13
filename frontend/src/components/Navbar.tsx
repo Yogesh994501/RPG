@@ -3,6 +3,8 @@ import { Shield, Coins, Flame, Volume2, VolumeX, LogOut, User as UserIcon, Plus 
 import { User, Character } from '../types';
 import { soundEngine } from '../services/soundEngine';
 
+import { NumberCounter } from './NumberCounter';
+
 interface NavbarProps {
   user: User | null;
   character: Character | null;
@@ -30,22 +32,22 @@ export const Navbar: React.FC<NavbarProps> = ({
         </div>
         <div>
           <span className="logo-title">CHRONOSLAYER</span>
-          <span className="logo-subtitle">THE HERO'S LIFE RPG</span>
+          <span className="logo-subtitle">THE STUDY GUILD LIFE RPG</span>
         </div>
       </div>
 
       {user && character ? (
         <div className="nav-stats">
-          {/* Gold Pill */}
+          {/* Gold Pill with Digit-Ticking Counter */}
           <div className="stat-pill stat-pill-gold" title="Total In-Game Gold">
             <Coins size={16} />
-            <span>{character.gold} Gold</span>
+            <span><NumberCounter value={character.gold} /> Gold</span>
           </div>
 
-          {/* Streak Pill */}
-          <div className="stat-pill stat-pill-streak" title={`${character.current_streak} Day Consecutive Streak! (${character.streak_multiplier}x Multiplier)`}>
+          {/* Combo / Streak Pill */}
+          <div className="stat-pill stat-pill-streak" title={`${character.current_streak} Consecutive Quest Days! (${character.streak_multiplier}x Multiplier)`}>
             <Flame size={16} className="flame-icon" />
-            <span>{character.current_streak}d Streak</span>
+            <span>{character.current_streak} Combo</span>
             {character.streak_multiplier > 1.0 && (
               <span className="badge-tag badge-legendary text-[10px]">
                 {character.streak_multiplier}x

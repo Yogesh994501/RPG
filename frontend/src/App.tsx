@@ -12,6 +12,7 @@ import { CustomRewardsView } from './components/CustomRewardsView';
 import { AuthModal } from './components/AuthModal';
 import { LevelUpCelebration } from './components/LevelUpCelebration';
 import { LootChestModal, LootReward } from './components/LootChestModal';
+import { QuestSkeleton, DashboardSkeleton } from './components/LoadingSkeleton';
 import { 
   User, 
   Character, 
@@ -57,6 +58,7 @@ export function App() {
     bossesDefeated: 0
   });
   const [customRewards, setCustomRewards] = useState<CustomReward[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
 
   // Navigation & Modals
   const [activeTab, setActiveTab] = useState<'quests' | 'map' | 'boss' | 'armory' | 'chronicle' | 'rewards'>('quests');
@@ -81,6 +83,7 @@ export function App() {
 
   // Load user data cold from SQLite backend
   const loadUserData = useCallback(async () => {
+    setIsLoading(true);
     try {
       const [charRes, questsRes, shopRes, bossRes, chronicleRes, rewardsRes] = await Promise.all([
         api.getCharacter(),
@@ -125,6 +128,8 @@ export function App() {
       if (!api.getToken()) {
         setIsAuthModalOpen(true);
       }
+    } finally {
+      setIsLoading(false);
     }
   }, []);
 
@@ -215,6 +220,12 @@ export function App() {
 
   const handleCompleteQuest = async (questId: string) => {
     const targetQuest = quests.find(q => q.id === questId);
+    if (!targetQuest) return;
+
+    // Snapshot state for optimistic rollback if anti-cheat rejects
+    const previousQuests = [...quests];
+    const previousCharacter = character ? { ...character } : null;
+
     try {
       // 1. Optimistic update
       setQuests((prev) =>
@@ -272,8 +283,22 @@ export function App() {
         }
       });
     } catch (err: any) {
-      showToast(`Failed to complete quest: ${err.message}`);
-      loadUserData();
+      // Rollback optimistic state immediately
+      setQuests(previousQuests);
+      if (previousCharacter) {
+        setCharacter(previousCharacter);
+      }
+
+      // Reject shake animation on the card
+      const cardEl = document.getElementById(`quest-card-${questId}`);
+      if (cardEl) {
+        cardEl.classList.remove('shake-reject');
+        void cardEl.offsetWidth; // reflow
+        cardEl.classList.add('shake-reject');
+      }
+
+      soundEngine.playQuestAbandon();
+      showToast(`⚠️ Deed Rejected: ${err.message || 'Already completed for this cycle!'}`);
     }
   };
 
@@ -431,7 +456,14 @@ export function App() {
       {/* Main App Layout */}
       <main className="main-layout flex-1">
         {/* Left Column: Character Sheet with Paper-Doll Rig */}
-        {user && character ? (
+        {isLoading && !character ? (
+          <aside className="rpg-panel p-5 rounded-xl border border-slate-800 space-y-4 animate-pulse">
+            <div className="w-20 h-20 rounded-xl bg-slate-800/80 mx-auto" />
+            <div className="h-4 bg-slate-800 rounded w-2/3 mx-auto" />
+            <div className="h-3 bg-slate-800/60 rounded w-1/2 mx-auto" />
+            <div className="h-2.5 bg-slate-800 rounded-full w-full" />
+          </aside>
+        ) : user && character ? (
           <CharacterPanel
             user={user}
             character={character}
@@ -518,7 +550,10 @@ export function App() {
 
           {/* View Content based on Tab */}
           {activeTab === 'quests' && (
-            <>
+            isLoading && quests.length === 0 ? (
+              <DashboardSkeleton />
+            ) : (
+              <>
               {/* Quick View Mode Switcher */}
               <div className="flex items-center justify-between bg-slate-950/70 p-2.5 rounded-xl border border-slate-800 text-xs mb-3">
                 <span className="text-slate-400 font-mono text-[11px] flex items-center gap-1.5">
@@ -592,7 +627,8 @@ export function App() {
                 onDeleteQuest={handleDeleteQuest}
               />
             </>
-          )}
+          )
+        )}
 
           {activeTab === 'boss' && (
             <BossRaid

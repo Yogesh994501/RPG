@@ -134,10 +134,29 @@ export function initDatabase() {
       FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
     );
 
+    CREATE TABLE IF NOT EXISTS titles (
+      id TEXT PRIMARY KEY,
+      user_id TEXT NOT NULL,
+      name TEXT NOT NULL,
+      criteria TEXT NOT NULL,
+      unlocked_at TEXT NOT NULL,
+      FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+    );
+
     CREATE INDEX IF NOT EXISTS idx_quests_user ON quests(user_id, is_completed);
     CREATE INDEX IF NOT EXISTS idx_transactions_user ON transactions(user_id, created_at DESC);
     CREATE INDEX IF NOT EXISTS idx_quest_logs_user ON quest_logs(user_id, completed_at DESC);
   `);
+
+  try {
+    db.prepare('ALTER TABLE quests ADD COLUMN category TEXT DEFAULT "mind"').run();
+  } catch {}
+  try {
+    db.prepare('ALTER TABLE quests ADD COLUMN recurrence TEXT DEFAULT "daily"').run();
+  } catch {}
+  try {
+    db.prepare('ALTER TABLE quests ADD COLUMN is_active INTEGER DEFAULT 1').run();
+  } catch {}
 
   seedShopItems();
 }
