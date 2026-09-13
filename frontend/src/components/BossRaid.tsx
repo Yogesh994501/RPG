@@ -114,7 +114,13 @@ export const BossRaid: React.FC<BossRaidProps> = ({
           }`}
           style={{ width: 130, height: 130, minWidth: 130, minHeight: 130, maxWidth: 130, maxHeight: 130 }}
         >
-          {boss.boss_name.includes('Malakor') ? (
+          {boss.boss_name.includes('Chronos') ? (
+            <img
+              src="/assets/boss_chronos.jpg"
+              alt={boss.boss_name}
+              style={{ width: 130, height: 130, objectFit: 'cover', objectPosition: 'top', display: 'block' }}
+            />
+          ) : boss.boss_name.includes('Malakor') ? (
             <img
               src="/assets/boss_malakor.jpg"
               alt={boss.boss_name}
@@ -123,7 +129,7 @@ export const BossRaid: React.FC<BossRaidProps> = ({
           ) : (
             <div className="w-full h-full flex flex-col items-center justify-center bg-gradient-to-b from-red-950 to-slate-950 text-5xl">
               <span className="drop-shadow-[0_0_15px_rgba(239,68,68,0.7)] animate-pulse">
-                {boss.boss_name.includes('Ignis') ? '🔥' : boss.boss_name.includes('Umbra') ? '👥' : boss.boss_name.includes('Chronos') ? '⌛' : boss.boss_name.includes('Apathy') ? '❄️' : boss.boss_name.includes('Sirena') ? '🌊' : boss.boss_name.includes('Vulcanus') ? '🌋' : '🌌'}
+                {boss.boss_name.includes('Ignis') ? '🔥' : boss.boss_name.includes('Umbra') ? '👥' : boss.boss_name.includes('Apathy') ? '❄️' : boss.boss_name.includes('Sirena') ? '🌊' : boss.boss_name.includes('Vulcanus') ? '🌋' : '🌌'}
               </span>
             </div>
           )}

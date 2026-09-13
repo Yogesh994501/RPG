@@ -163,7 +163,13 @@ export const BattleArena: React.FC<BattleArenaProps> = ({
               className="arena-boss-portrait" 
               style={{ width: 110, height: 110, minWidth: 110, minHeight: 110, maxWidth: 110, maxHeight: 110 }}
             >
-              {boss.boss_name.includes('Malakor') ? (
+              {boss.boss_name.includes('Chronos') ? (
+                <img
+                  src="/assets/boss_chronos.jpg"
+                  alt={boss.boss_name}
+                  style={{ width: 110, height: 110, objectFit: 'cover', objectPosition: 'top', display: 'block' }}
+                />
+              ) : boss.boss_name.includes('Malakor') ? (
                 <img
                   src="/assets/boss_malakor.jpg"
                   alt={boss.boss_name}
@@ -171,7 +177,7 @@ export const BattleArena: React.FC<BattleArenaProps> = ({
                 />
               ) : (
                 <div className="w-full h-full flex flex-col items-center justify-center bg-gradient-to-b from-red-950/80 to-slate-950 text-4xl">
-                  <span>{boss.boss_name.includes('Ignis') ? '🔥' : boss.boss_name.includes('Umbra') ? '👥' : boss.boss_name.includes('Chronos') ? '⌛' : boss.boss_name.includes('Apathy') ? '❄️' : boss.boss_name.includes('Sirena') ? '🌊' : boss.boss_name.includes('Vulcanus') ? '🌋' : '🌌'}</span>
+                  <span>{boss.boss_name.includes('Ignis') ? '🔥' : boss.boss_name.includes('Umbra') ? '👥' : boss.boss_name.includes('Apathy') ? '❄️' : boss.boss_name.includes('Sirena') ? '🌊' : boss.boss_name.includes('Vulcanus') ? '🌋' : '🌌'}</span>
                 </div>
               )}
               <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-transparent pointer-events-none" />
