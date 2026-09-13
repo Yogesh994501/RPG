@@ -1,12 +1,40 @@
 # ⚔️ ChronoSlayer: The Authoritative Life RPG & Gamified Habit Quest
 
 [![TypeScript](https://img.shields.io/badge/TypeScript-007ACC?style=for-the-badge&logo=typescript&logoColor=white)](https://www.typescriptlang.org/)
-[![React 18](https://img.shields.io/badge/React_18-20232A?style=for-the-badge&logo=react&logoColor=61DAFB)](https://react.dev/)
+[![React 19](https://img.shields.io/badge/React_19-20232A?style=for-the-badge&logo=react&logoColor=61DAFB)](https://react.dev/)
 [![Express.js](https://img.shields.io/badge/Express.js-404D59?style=for-the-badge)](https://expressjs.com/)
 [![SQLite](https://img.shields.io/badge/SQLite3_WAL-07405E?style=for-the-badge&logo=sqlite&logoColor=white)](https://sqlite.org/)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg?style=for-the-badge)](https://opensource.org/licenses/MIT)
 
 > **"ChronoSlayer turns real-world discipline into a persistent game system. Every quest is processed by a server-authoritative progression engine that converts real actions into XP, attributes, equipment, streaks, and boss damage — while the database preserves the player's journey across sessions."**
+
+### 🌐 Live Demo
+
+> **Play Now:** [https://chronoslayer-life-rpg.onrender.com](https://chronoslayer-life-rpg.onrender.com)
+
+---
+
+## 🎬 Demo Videos
+
+| Video | What It Shows |
+|:---|:---|
+| [01 — Registration & Quest Creation](demo/01_registration_and_quests.webp) | Landing page → Hero registration → Creating quests across Mind, Body, and Craft skill trees |
+| [02 — Combat, Shop & Realm Map](demo/02_combat_shop_and_map.webp) | Quest completion → Loot rewards → Level-up → Boss raid combat → Merchant's Armory → Overworld Map |
+| [03 — Bestiary & Guild Bounties](demo/03_bestiary_and_bounties.webp) | 8-Titan Pantheon bestiary → 16 Guild Bounty deeds across 4 categories |
+
+## 📸 Screenshots
+
+<p align="center">
+  <img src="demo/screenshot_landing.png" width="400" alt="Landing Page" />
+  <img src="demo/screenshot_questboard.png" width="400" alt="Quest Board" />
+</p>
+<p align="center">
+  <img src="demo/screenshot_boss_raid.png" width="400" alt="Boss Raid" />
+  <img src="demo/screenshot_shop.png" width="400" alt="Merchant's Armory" />
+</p>
+<p align="center">
+  <img src="demo/screenshot_realm_map.png" width="400" alt="Realm Map" />
+</p>
 
 ---
 
@@ -14,6 +42,7 @@
 Traditional productivity trackers fail because they suffer from **delayed gratification** — the real-world results of hitting the gym, reading 50 pages, or coding take months to show. Video games succeed because of **immediate dopamine loops, tactile progression, and tangible rewards**.
 
 **ChronoSlayer bridges this divide** with a dark fantasy RPG engine that celebrates your daily victories with instant feedback, non-linear leveling, attribute growth, armory gear, and cooperative/solo world boss raids.
+
 
 ---
 
@@ -111,8 +140,8 @@ Attributes are **combat-functional**, not decorative:
 
 ### 1. Clone & Install
 ```bash
-git clone https://github.com/your-username/chronoslayer-rpg.git
-cd chronoslayer-rpg
+git clone https://github.com/Yogesh994501/RPG.git
+cd RPG
 
 # Install Backend
 cd backend
